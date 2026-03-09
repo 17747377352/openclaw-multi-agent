@@ -1,0 +1,38 @@
+{
+  "workflow": {
+    "mode": "forum",  // forum=论坛讨论，direct=直接分发
+    "forumFile": "shared/forum.md"
+  },
+  "agents": {
+    "main": {
+      "label": "main",
+      "model": "bailian/qwen3.5-plus",
+      "task": "阅读 agents/main.md，协调其他 Agent 工作",
+      "description": "执行决策者"
+    },
+    "developer": {
+      "label": "developer",
+      "model": "bailian/qwen3-coder-plus",
+      "task": "阅读 agents/developer.md，等待开发任务",
+      "description": "前后端开发者"
+    },
+    "designer": {
+      "label": "designer",
+      "model": "bailian/qwen3.5-plus",
+      "task": "阅读 agents/designer.md，等待设计任务",
+      "description": "产品设计者"
+    },
+    "ops": {
+      "label": "ops",
+      "model": "bailian/qwen3.5-plus",
+      "task": "阅读 agents/ops.md，等待运维任务",
+      "description": "测试运维者"
+    }
+  },
+  "models": {
+    "general": "bailian/qwen3.5-plus",
+    "coder": "bailian/qwen3-coder-plus",
+    "max": "bailian/qwen3-max-2026-01-23"
+  },
+  "workspace": "/home/ubuntu/.openclaw/workspace"
+}

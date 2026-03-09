@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent 内部论坛 - 讨论看板</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; margin-bottom: 30px; border-radius: 10px; }
+    header h1 { font-size: 28px; margin-bottom: 10px; }
+    header p { opacity: 0.9; }
+    .topic { background: white; border-radius: 10px; padding: 30px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .topic-header { border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
+    .topic-title { font-size: 24px; color: #333; margin-bottom: 10px; }
+    .topic-meta { color: #666; font-size: 14px; }
+    .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }
+    .status-discussing { background: #fff3cd; color: #856404; }
+    .status-final { background: #d4edda; color: #155724; }
+    .section { margin: 25px 0; padding: 20px; background: #fafafa; border-radius: 8px; border-left: 4px solid #667eea; }
+    .section.developer { border-left-color: #4CAF50; }
+    .section.designer { border-left-color: #FF9800; }
+    .section.ops { border-left-color: #2196F3; }
+    .section.final { border-left-color: #9C27B0; background: #f3e5f5; }
+    .section-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+    .agent-tag { background: #333; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    .section-meta { color: #888; font-size: 13px; margin-bottom: 15px; }
+    .section-content { color: #444; }
+    .section-content ul { margin: 10px 0 10px 20px; }
+    .section-content li { margin: 5px 0; }
+    .refresh-btn { position: fixed; bottom: 30px; right: 30px; background: #667eea; color: white; border: none; padding: 15px 25px; border-radius: 50px; cursor: pointer; font-size: 16px; box-shadow: 0 4px 15px rgba(102,126,234,0.4); transition: transform 0.2s; }
+    .refresh-btn:hover { transform: scale(1.05); }
+    .auto-refresh { position: fixed; bottom: 30px; left: 30px; background: white; padding: 10px 20px; border-radius: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 14px; color: #666; }
+    .auto-refresh input { margin-right: 8px; }
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .error { background: #ffebee; color: #c62828; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    blockquote { background: #f9f9f9; border-left: 4px solid #ddd; padding: 15px 20px; margin: 15px 0; color: #555; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 8px; }
+    .avatar-dev { background: #4CAF50; }
+    .avatar-designer { background: #FF9800; }
+    .avatar-ops { background: #2196F3; }
+    .avatar-main { background: #9C27B0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🤖 Agent 内部论坛</h1>
+      <p>查看 Agent 们的讨论过程和最终方案</p>
+    </header>
+
+    <div id="content">
+      <div class="loading">正在加载讨论...</div>
+    </div>
+  </div>
+
+  <button class="refresh-btn" onclick="loadForum()">🔄 刷新</button>
+  
+  <div class="auto-refresh">
+    <label>
+      <input type="checkbox" id="autoRefresh" checked> 自动刷新 (10 秒)
+    </label>
+  </div>
+
+  <script>
+    let autoRefreshInterval;
+
+    async function loadForum() {
+      try {
+        const response = await fetch('/api/forum.md?t=' + Date.now());
+        if (!response.ok) throw new Error('加载失败');
+        const markdown = await response.text();
+        renderForum(markdown);
+      } catch (error) {
+        document.getElementById('content').innerHTML = `
+          <div class="error">
+            <strong>加载失败:</strong> ${error.message}<br>
+            请确保后端服务正在运行
+          </div>
+        `;
+      }
+    }
+
+    function renderForum(markdown) {
+      const lines = markdown.split('\n');
+      let html = '';
+      let currentTopic = null;
+      let currentSection = null;
+      let inContent = false;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // 讨论主题
+        if (line.startsWith('### [讨论中]')) {
+          if (currentTopic) html += renderTopic(currentTopic);
+          currentTopic = {
+            title: line.replace('### [讨论中]', '').trim(),
+            meta: [],
+            sections: []
+          };
+          currentSection = null;
+          inContent = false;
+        }
+
+        // 元数据
+        else if (currentTopic && line.startsWith('**发起**:')) {
+          currentTopic.meta.push(line);
+        }
+        else if (currentTopic && line.startsWith('**时间**:')) {
+          currentTopic.meta.push(line);
+        }
+        else if (currentTopic && line.startsWith('**状态**:')) {
+          currentTopic.meta.push(line);
+        }
+
+        // 原始需求
+        else if (line.startsWith('#### 原始需求')) {
+          currentSection = { type: 'requirement', title: '原始需求', content: [] };
+          currentTopic.sections.push(currentSection);
+          inContent = false;
+        }
+
+        // Agent 意见
+        else if (line.startsWith('#### @developer')) {
+          currentSection = { type: 'developer', title: '技术实现思路', agent: 'developer', content: [] };
+          currentTopic.sections.push(currentSection);
+          inContent = false;
+        }
+        else if (line.startsWith('#### @designer')) {
+          currentSection = { type: 'designer', title: '产品设计思路', agent: 'designer', content: [] };
+          currentTopic.sections.push(currentSection);
+          inContent = false;
+        }
+        else if (line.startsWith('#### @ops')) {
+          currentSection = { type: 'ops', title: '部署运维思路', agent: 'ops', content: [] };
+          currentTopic.sections.push(currentSection);
+          inContent = false;
+        }
+
+        // 最终方案
+        else if (line.startsWith('#### 📋 最终方案')) {
+          currentSection = { type: 'final', title: '最终方案', agent: 'main', content: [] };
+          currentTopic.sections.push(currentSection);
+          inContent = false;
+        }
+
+        // 内容行
+        else if (currentSection) {
+          if (line.startsWith('---')) {
+            inContent = false;
+          } else if (line.trim() && !line.startsWith('**')) {
+            inContent = true;
+            currentSection.content.push(line);
+          } else if (line.startsWith('**时间**:') || line.startsWith('**状态**:')) {
+            currentSection.meta = line;
+          }
+        }
+      }
+
+      if (currentTopic) html += renderTopic(currentTopic);
+
+      document.getElementById('content').innerHTML = html || '<div class="loading">暂无讨论主题</div>';
+    }
+
+    function renderTopic(topic) {
+      const statusClass = topic.meta.some(m => m.includes('🟡')) ? 'status-discussing' : 'status-final';
+      const statusText = topic.meta.find(m => m.includes('🟡') || m.includes('✅')) || '🟡 讨论中';
+
+      return `
+        <div class="topic">
+          <div class="topic-header">
+            <div class="topic-title">${topic.title} <span class="status ${statusClass}">${statusText}</span></div>
+            <div class="topic-meta">${topic.meta.join(' · ')}</div>
+          </div>
+          ${topic.sections.map(section => renderSection(section)).join('')}
+        </div>
+      `;
+    }
+
+    function renderSection(section) {
+      const avatarClass = `avatar-${section.agent || 'main'}`;
+      const agentName = section.agent ? `@${section.agent}` : '';
+      const content = section.content.join('\n')
+        .replace(/\n- /g, '<li>- ')
+        .replace(/^- /g, '<li>- </li>')
+        .replace(/\n/g, '<br>');
+
+      return `
+        <div class="section ${section.type}">
+          <div class="section-title">
+            <span class="avatar ${avatarClass}"></span>
+            <span class="agent-tag">${agentName}</span>
+            ${section.title}
+          </div>
+          ${section.meta ? `<div class="section-meta">${section.meta}</div>` : ''}
+          <div class="section-content">${content}</div>
+        </div>
+      `;
+    }
+
+    // 自动刷新
+    document.getElementById('autoRefresh').addEventListener('change', function(e) {
+      if (e.target.checked) {
+        autoRefreshInterval = setInterval(loadForum, 10000);
+      } else {
+        clearInterval(autoRefreshInterval);
+      }
+    });
+
+    // 初始加载
+    loadForum();
+    autoRefreshInterval = setInterval(loadForum, 10000);
+  </script>
+</body>
+</html>
