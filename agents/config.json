@@ -12,9 +12,9 @@
     },
     "developer": {
       "label": "developer",
-      "model": "bailian/qwen3-coder-plus",
+      "model": "kimi-code-preview",
       "task": "阅读 agents/developer.md，等待开发任务",
-      "description": "前后端开发者"
+      "description": "前后端开发者（Kimi Code）"
     },
     "designer": {
       "label": "designer",
