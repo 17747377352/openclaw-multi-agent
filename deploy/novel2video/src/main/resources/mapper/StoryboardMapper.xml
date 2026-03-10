@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.novel2video.mapper.StoryboardMapper">
+
+    <resultMap id="BaseResultMap" type="com.novel2video.entity.Storyboard">
+        <id column="id" property="id"/>
+        <result column="group_id" property="groupId"/>
+        <result column="scene_number" property="sceneNumber"/>
+        <result column="description" property="description"/>
+        <result column="prompt" property="prompt"/>
+        <result column="character_ids" property="characterIds"/>
+        <result column="frame_image_url" property="frameImageUrl"/>
+        <result column="frame_status" property="frameStatus"/>
+        <result column="is_confirmed" property="isConfirmed"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, group_id, scene_number, description, prompt, character_ids,
+        frame_image_url, frame_status, is_confirmed, created_at, updated_at
+    </sql>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO storyboard (
+            group_id, scene_number, description, prompt, character_ids,
+            frame_image_url, frame_status, is_confirmed, created_at, updated_at
+        ) VALUES
+        <foreach collection="list" item="storyboard" separator=",">
+            (
+                #{storyboard.groupId}, #{storyboard.sceneNumber}, #{storyboard.description},
+                #{storyboard.prompt}, #{storyboard.characterIds}, #{storyboard.frameImageUrl},
+                #{storyboard.frameStatus}, #{storyboard.isConfirmed}, NOW(), NOW()
+            )
+        </foreach>
+    </insert>
+
+    <select id="selectByGroupId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM storyboard
+        WHERE group_id = #{groupId}
+        ORDER BY scene_number ASC
+    </select>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM storyboard
+        WHERE id = #{id}
+    </select>
+
+    <update id="update" parameterType="com.novel2video.entity.Storyboard">
+        UPDATE storyboard
+        <set>
+            <if test="description != null">description = #{description},</if>
+            <if test="prompt != null">prompt = #{prompt},</if>
+            <if test="characterIds != null">character_ids = #{characterIds},</if>
+            <if test="frameImageUrl != null">frame_image_url = #{frameImageUrl},</if>
+            <if test="frameStatus != null">frame_status = #{frameStatus},</if>
+            <if test="isConfirmed != null">is_confirmed = #{isConfirmed},</if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

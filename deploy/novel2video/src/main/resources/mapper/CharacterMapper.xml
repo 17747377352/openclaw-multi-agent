@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.novel2video.mapper.CharacterMapper">
+
+    <resultMap id="BaseResultMap" type="com.novel2video.entity.NovelCharacter">
+        <id column="id" property="id"/>
+        <result column="project_id" property="projectId"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="user_edited_description" property="userEditedDescription"/>
+        <result column="gender" property="gender"/>
+        <result column="role" property="role"/>
+        <result column="seed_image_url" property="seedImageUrl"/>
+        <result column="seed_prompt" property="seedPrompt"/>
+        <result column="seed_status" property="seedStatus"/>
+        <result column="is_confirmed" property="isConfirmed"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, project_id, name, description, user_edited_description, gender, role,
+        seed_image_url, seed_prompt, seed_status, is_confirmed, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.novel2video.entity.NovelCharacter" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO character (
+            project_id, name, description, user_edited_description, gender, role,
+            seed_image_url, seed_prompt, seed_status, is_confirmed, created_at, updated_at
+        ) VALUES (
+            #{projectId}, #{name}, #{description}, #{userEditedDescription}, #{gender}, #{role},
+            #{seedImageUrl}, #{seedPrompt}, #{seedStatus}, #{isConfirmed}, NOW(), NOW()
+        )
+    </insert>
+
+    <select id="selectByProjectId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM character
+        WHERE project_id = #{projectId}
+        ORDER BY created_at ASC
+    </select>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM character
+        WHERE id = #{id}
+    </select>
+
+    <update id="update" parameterType="com.novel2video.entity.NovelCharacter">
+        UPDATE character
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="userEditedDescription != null">user_edited_description = #{userEditedDescription},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="role != null">role = #{role},</if>
+            <if test="seedImageUrl != null">seed_image_url = #{seedImageUrl},</if>
+            <if test="seedPrompt != null">seed_prompt = #{seedPrompt},</if>
+            <if test="seedStatus != null">seed_status = #{seedStatus},</if>
+            <if test="isConfirmed != null">is_confirmed = #{isConfirmed},</if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="batchUpdateConfirmStatus">
+        UPDATE character
+        SET is_confirmed = #{isConfirmed}, updated_at = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

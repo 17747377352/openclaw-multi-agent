@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.novel2video.mapper.ChapterGroupMapper">
+
+    <resultMap id="BaseResultMap" type="com.novel2video.entity.ChapterGroup">
+        <id column="id" property="id"/>
+        <result column="project_id" property="projectId"/>
+        <result column="group_number" property="groupNumber"/>
+        <result column="name" property="name"/>
+        <result column="chapter_ids" property="chapterIds"/>
+        <result column="start_chapter" property="startChapter"/>
+        <result column="end_chapter" property="endChapter"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, project_id, group_number, name, chapter_ids, 
+        start_chapter, end_chapter, status, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.novel2video.entity.ChapterGroup" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chapter_group (
+            project_id, group_number, name, chapter_ids, 
+            start_chapter, end_chapter, status, created_at, updated_at
+        ) VALUES (
+            #{projectId}, #{groupNumber}, #{name}, #{chapterIds}, 
+            #{startChapter}, #{endChapter}, #{status}, NOW(), NOW()
+        )
+    </insert>
+
+    <select id="selectByProjectId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM chapter_group
+        WHERE project_id = #{projectId}
+        ORDER BY group_number ASC
+    </select>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM chapter_group
+        WHERE id = #{id}
+    </select>
+
+    <update id="update" parameterType="com.novel2video.entity.ChapterGroup">
+        UPDATE chapter_group
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="chapterIds != null">chapter_ids = #{chapterIds},</if>
+            <if test="status != null">status = #{status},</if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

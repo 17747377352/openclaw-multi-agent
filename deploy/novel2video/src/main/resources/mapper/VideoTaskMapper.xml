@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.novel2video.mapper.VideoTaskMapper">
+
+    <resultMap id="BaseResultMap" type="com.novel2video.entity.VideoTask">
+        <id column="id" property="id"/>
+        <result column="group_id" property="groupId"/>
+        <result column="storyboard_id" property="storyboardId"/>
+        <result column="task_id" property="taskId"/>
+        <result column="video_url" property="videoUrl"/>
+        <result column="video_duration" property="videoDuration"/>
+        <result column="status" property="status"/>
+        <result column="fail_reason" property="failReason"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="progress" property="progress"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, group_id, storyboard_id, task_id, video_url, video_duration,
+        status, fail_reason, retry_count, progress, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.novel2video.entity.VideoTask" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO video_task (
+            group_id, storyboard_id, task_id, video_url, video_duration,
+            status, fail_reason, retry_count, progress, created_at, updated_at
+        ) VALUES (
+            #{groupId}, #{storyboardId}, #{taskId}, #{videoUrl}, #{videoDuration},
+            #{status}, #{failReason}, #{retryCount}, #{progress}, NOW(), NOW()
+        )
+    </insert>
+
+    <select id="selectByGroupId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM video_task
+        WHERE group_id = #{groupId}
+        ORDER BY created_at ASC
+    </select>
+
+    <select id="selectByTaskId" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM video_task
+        WHERE task_id = #{taskId}
+    </select>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM video_task
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectPendingTasks" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM video_task
+        WHERE status = 1
+        ORDER BY created_at ASC
+        LIMIT 100
+    </select>
+
+    <update id="update" parameterType="com.novel2video.entity.VideoTask">
+        UPDATE video_task
+        <set>
+            <if test="taskId != null">task_id = #{taskId},</if>
+            <if test="videoUrl != null">video_url = #{videoUrl},</if>
+            <if test="videoDuration != null">video_duration = #{videoDuration},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="failReason != null">fail_reason = #{failReason},</if>
+            <if test="retryCount != null">retry_count = #{retryCount},</if>
+            <if test="progress != null">progress = #{progress},</if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

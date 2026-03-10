@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.novel2video.mapper.NovelProjectMapper">
+
+    <resultMap id="BaseResultMap" type="com.novel2video.entity.NovelProject">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="author" property="author"/>
+        <result column="original_file_path" property="originalFilePath"/>
+        <result column="total_chapters" property="totalChapters"/>
+        <result column="total_words" property="totalWords"/>
+        <result column="status" property="status"/>
+        <result column="user_id" property="userId"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, title, author, original_file_path, total_chapters, total_words, 
+        status, user_id, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.novel2video.entity.NovelProject" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO novel_project (
+            title, author, original_file_path, total_chapters, total_words, 
+            status, user_id, created_at, updated_at
+        ) VALUES (
+            #{title}, #{author}, #{originalFilePath}, #{totalChapters}, #{totalWords}, 
+            #{status}, #{userId}, NOW(), NOW()
+        )
+    </insert>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM novel_project
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM novel_project
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="update" parameterType="com.novel2video.entity.NovelProject">
+        UPDATE novel_project
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="author != null">author = #{author},</if>
+            <if test="originalFilePath != null">original_file_path = #{originalFilePath},</if>
+            <if test="totalChapters != null">total_chapters = #{totalChapters},</if>
+            <if test="totalWords != null">total_words = #{totalWords},</if>
+            <if test="status != null">status = #{status},</if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM novel_project WHERE id = #{id}
+    </delete>
+
+</mapper>

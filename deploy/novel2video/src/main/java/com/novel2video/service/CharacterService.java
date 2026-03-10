@@ -19,7 +19,7 @@ public interface CharacterService {
      * @param novelContent 小说内容
      * @return 人物列表
      */
-    List<Character> extractCharacters(Long projectId, String novelContent);
+    List<NovelCharacter> extractCharacters(Long projectId, String novelContent);
 
     /**
      * 生成人物标准照（使用火山豆包生图）
@@ -32,12 +32,12 @@ public interface CharacterService {
     /**
      * 获取人物列表
      */
-    List<Character> getCharactersByProjectId(Long projectId);
+    List<NovelCharacter> getCharactersByProjectId(Long projectId);
 
     /**
      * 更新人物信息
      */
-    void updateCharacter(NovelNovelCharacter character);
+    void updateCharacter(NovelCharacter character);
 
     /**
      * 批量确认人物

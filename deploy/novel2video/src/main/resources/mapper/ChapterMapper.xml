@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.novel2video.mapper.ChapterMapper">
+
+    <resultMap id="BaseResultMap" type="com.novel2video.entity.Chapter">
+        <id column="id" property="id"/>
+        <result column="project_id" property="projectId"/>
+        <result column="chapter_number" property="chapterNumber"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="word_count" property="wordCount"/>
+        <result column="group_id" property="groupId"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, project_id, chapter_number, title, content, word_count, 
+        group_id, created_at, updated_at
+    </sql>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO chapter (
+            project_id, chapter_number, title, content, word_count, 
+            group_id, created_at, updated_at
+        ) VALUES
+        <foreach collection="list" item="chapter" separator=",">
+            (
+                #{chapter.projectId}, #{chapter.chapterNumber}, #{chapter.title}, 
+                #{chapter.content}, #{chapter.wordCount}, #{chapter.groupId}, 
+                NOW(), NOW()
+            )
+        </foreach>
+    </insert>
+
+    <select id="selectByProjectId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM chapter
+        WHERE project_id = #{projectId}
+        ORDER BY chapter_number ASC
+    </select>
+
+    <select id="selectByGroupId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM chapter
+        WHERE group_id = #{groupId}
+        ORDER BY chapter_number ASC
+    </select>
+
+    <update id="updateGroupId">
+        UPDATE chapter
+        SET group_id = #{groupId}, updated_at = NOW()
+        WHERE id = #{chapterId}
+    </update>
+
+</mapper>

@@ -1,0 +1,23 @@
+# 生产环境配置
+
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME:ai-translation}?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+# 生产环境关闭详细日志
+logging:
+  level:
+    root: WARN
+    com.novel2video: INFO
+
+# 文件上传限制调大
+spring:
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB

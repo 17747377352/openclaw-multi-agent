@@ -31,7 +31,7 @@ public class NovelCharacterController {
     public Map<String, Object> getCharacters(@PathVariable Long projectId) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<Character> characters = characterService.getCharactersByProjectId(projectId);
+            List<NovelCharacter> characters = characterService.getCharactersByProjectId(projectId);
             result.put("success", true);
             result.put("data", characters);
             result.put("count", characters.size());
@@ -51,7 +51,7 @@ public class NovelCharacterController {
                                                   @RequestParam String content) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<Character> characters = characterService.extractCharacters(projectId, content);
+            List<NovelCharacter> characters = characterService.extractCharacters(projectId, content);
             result.put("success", true);
             result.put("data", characters);
             result.put("message", "人物提取成功");
@@ -87,7 +87,7 @@ public class NovelCharacterController {
      */
     @PostMapping("/{characterId}")
     public Map<String, Object> updateCharacter(@PathVariable Long characterId,
-                                                @RequestBody NovelNovelCharacter character) {
+                                                @RequestBody NovelCharacter character) {
         Map<String, Object> result = new HashMap<>();
         try {
             character.setId(characterId);

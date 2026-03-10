@@ -18,22 +18,22 @@ public interface CharacterMapper {
     /**
      * 插入人物
      */
-    int insert(NovelNovelCharacter character);
+    int insert(NovelCharacter character);
     
     /**
      * 根据项目 ID 查询
      */
-    List<Character> selectByProjectId(@Param("projectId") Long projectId);
+    List<NovelCharacter> selectByProjectId(@Param("projectId") Long projectId);
     
     /**
      * 根据 ID 查询
      */
-    Character selectById(@Param("id") Long id);
+    NovelCharacter selectById(@Param("id") Long id);
     
     /**
      * 更新人物
      */
-    int update(NovelNovelCharacter character);
+    int update(NovelCharacter character);
     
     /**
      * 批量更新人物确认状态
