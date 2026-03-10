@@ -34,4 +34,9 @@ public interface ChapterMapper {
      * 更新章节分组
      */
     int updateGroupId(@Param("chapterId") Long chapterId, @Param("groupId") Long groupId);
+    
+    /**
+     * 根据项目 ID 删除章节
+     */
+    int deleteByProjectId(@Param("projectId") Long projectId);
 }

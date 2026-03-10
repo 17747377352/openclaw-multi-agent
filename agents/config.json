@@ -6,9 +6,9 @@
   "agents": {
     "main": {
       "label": "main",
-      "model": "bailian/qwen3.5-plus",
+      "model": "bailian/qwen3-max-2026-01-23",
       "task": "阅读 agents/main.md，协调其他 Agent 工作",
-      "description": "执行决策者"
+      "description": "执行决策者（Qwen3-Max）"
     },
     "developer": {
       "label": "developer",

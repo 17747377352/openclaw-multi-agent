@@ -34,4 +34,9 @@ public interface ChapterGroupMapper {
      * 更新分组
      */
     int update(ChapterGroup group);
+    
+    /**
+     * 根据 ID 删除分组
+     */
+    int deleteById(@Param("id") Long id);
 }
