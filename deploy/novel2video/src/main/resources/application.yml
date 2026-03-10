@@ -60,7 +60,9 @@ ai:
   kimi:
     api-key: ${KIMI_API_KEY:sk-BI29b3F3D50HfPa72NQgHhPbmtoja26hyebt6xTeNU49Ctzm}
     base-url: https://api.moonshot.cn/v1
-    model: kimi-latest
+    model: kimi-latest  # 默认经典版
+    # model: kimi-code-preview  # Kimi Code（代码专用，待验证密钥）
+    # model: kimi-k2-0711-preview  # Kimi 2.5
 
 # 阿里云 OSS 配置
 aliyun:

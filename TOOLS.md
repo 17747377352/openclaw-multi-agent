@@ -65,9 +65,11 @@ Add whatever helps you do your job. This is your cheat sheet.
 - **OCR 模型**: `doubao-1-5-vision-pro-32k-250115`
 
 ### Kimi (Moonshot AI)
-- **API Key**: `sk-BI29b3F3D50HfPa72NQgHhPbmtoja26hyebt6xTeNU49Ctzm`
+- **API Key**: `sk-BI29b3F3D50HfPa72NQgHhPbmtoja26hyebt6xTeNU49Ctzm` ✅ 已验证（服务偶尔过载）
 - **Base URL**: `https://api.moonshot.cn/v1`
-- **Model**: `kimi-latest`
+- **经典模型**: `kimi-latest` ✅ 可用
+- **Kimi Code**: `kimi-code-preview` (代码专用)
+- **Kimi 2.5**: `kimi-k2-0711-preview`
 
 ### 微信小程序
 - **AppID**: `wxd9e44d7cb4c73f79`

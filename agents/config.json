@@ -32,7 +32,10 @@
   "models": {
     "general": "bailian/qwen3.5-plus",
     "coder": "bailian/qwen3-coder-plus",
-    "max": "bailian/qwen3-max-2026-01-23"
+    "max": "bailian/qwen3-max-2026-01-23",
+    "kimi-code": "kimi-code-preview",
+    "kimi-2.5": "kimi-k2-0711-preview",
+    "kimi-latest": "kimi-latest"
   },
   "workspace": "/home/ubuntu/.openclaw/workspace"
 }
