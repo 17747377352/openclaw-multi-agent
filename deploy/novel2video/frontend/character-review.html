@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人物审核 - 小说转短视频管理后台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .breadcrumb {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        .breadcrumb a {
+            color: white;
+            text-decoration: none;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-primary:hover {
+            background: #f0f0f0;
+        }
+        
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #73d13d;
+        }
+        
+        .btn-warning {
+            background: #fa8c16;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        .project-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .project-info h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        
+        .project-meta {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .project-meta span {
+            margin-right: 20px;
+        }
+        
+        .progress-info {
+            text-align: right;
+        }
+        
+        .progress-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+        }
+        
+        .toolbar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .toolbar-left {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .btn-outline {
+            background: white;
+            border: 1px solid #d9d9d9;
+            color: #666;
+        }
+        
+        .btn-outline:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .batch-actions {
+            display: none;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .batch-actions.active {
+            display: flex;
+        }
+        
+        .character-list {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .character-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: grid;
+            grid-template-columns: 200px 1fr 280px;
+            transition: all 0.3s;
+        }
+        
+        .character-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        
+        .character-image {
+            height: 280px;
+            background: #f5f7fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid #f0f0f0;
+            position: relative;
+        }
+        
+        .character-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .image-placeholder {
+            text-align: center;
+            color: #999;
+        }
+        
+        .image-placeholder .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .character-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        .status-pending { color: #fa8c16; }
+        .status-generating { color: #1890ff; }
+        .status-approved { color: #52c41a; }
+        .status-rejected { color: #ff4d4f; }
+        
+        .character-info {
+            padding: 20px;
+        }
+        
+        .character-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .character-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .character-role {
+            font-size: 12px;
+            padding: 3px 8px;
+            background: #f0f5ff;
+            color: #667eea;
+            border-radius: 4px;
+        }
+        
+        .character-description {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        
+        .character-traits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .trait-tag {
+            font-size: 12px;
+            padding: 3px 10px;
+            background: #f5f7fa;
+            color: #666;
+            border-radius: 12px;
+        }
+        
+        .edit-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .edit-section label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .edit-section textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+        
+        .character-actions {
+            padding: 20px;
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-left: 1px solid #f0f0f0;
+        }
+        
+        .action-btn {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .btn-approve {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-approve:hover {
+            background: #73d13d;
+        }
+        
+        .btn-reject {
+            background: white;
+            border: 1px solid #ff4d4f;
+            color: #ff4d4f;
+        }
+        
+        .btn-reject:hover {
+            background: #fff1f0;
+        }
+        
+        .btn-generate {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-generate:hover {
+            background: #764ba2;
+        }
+        
+        .btn-disabled {
+            background: #f0f0f0;
+            color: #999;
+            cursor: not-allowed;
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            font-size: 16px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>👥 人物审核</h1>
+            <div class="breadcrumb">
+                <a href="project-list.html">项目列表</a> / 斗破苍穹 - 第一季 / 人物审核
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="location.href='project-list.html'">← 返回列表</button>
+            <button class="btn btn-success" id="batchApproveBtn" style="display:none;">✅ 批量通过</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="project-summary">
+            <div class="project-info">
+                <h2>斗破苍穹 - 第一季</h2>
+                <div class="project-meta">
+                    <span>📄 120 章</span>
+                    <span>👥 8 人物</span>
+                    <span>🎬 24 分镜</span>
+                    <span>📅 创建于 2026-03-05</span>
+                </div>
+            </div>
+            <div class="progress-info">
+                <div class="progress-label">人物审核进度</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 62.5%"></div>
+                </div>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">5/8 已审核</div>
+            </div>
+        </div>
+        
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <input type="checkbox" class="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                <label for="selectAll" style="font-size: 14px; cursor: pointer;">全选</label>
+                <button class="btn btn-outline btn-sm" onclick="toggleBatchMode()">📋 批量操作</button>
+                <div class="batch-actions" id="batchActions">
+                    <span style="font-size: 13px; color: #666;">已选择 <span id="selectedCount">0</span> 项</span>
+                    <button class="btn btn-success btn-sm">✅ 批量通过</button>
+                    <button class="btn btn-warning btn-sm">❌ 批量拒绝</button>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-outline btn-sm">🔄 重新提取</button>
+            </div>
+        </div>
+        
+        <div class="character-list">
+            <!-- 人物卡片 1 - 已审核通过 -->
+            <div class="character-card">
+                <div class="character-image">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='280'%3E%3Crect fill='%23667eea' width='200' height='280'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48'%3E👤%3C/text%3E%3C/svg%3E" alt="萧炎">
+                    <span class="character-status status-approved">✅ 已通过</span>
+                </div>
+                <div class="character-info">
+                    <div class="character-header">
+                        <span class="character-name">萧炎</span>
+                        <span class="character-role">男主角</span>
+                    </div>
+                    <div class="character-description">
+                        十五岁少年，天赋卓绝后跌落，性格坚韧不拔。黑发黑眸，面容清秀，常着黑色劲装，背负玄重尺。修炼天赋极高，拥有异火焚决，气质从青涩逐渐转向沉稳。
+                    </div>
+                    <div class="character-traits">
+                        <span class="trait-tag">坚韧</span>
+                        <span class="trait-tag">天才</span>
+                        <span class="trait-tag">黑袍</span>
+                        <span class="trait-tag">玄重尺</span>
+                        <span class="trait-tag">异火</span>
+                    </div>
+                </div>
+                <div class="character-actions">
+                    <button class="action-btn btn-disabled" disabled>已通过</button>
+                    <button class="action-btn btn-reject">撤回</button>
+                    <button class="action-btn btn-outline" style="width:100%">重新生成</button>
+                </div>
+            </div>
+            
+            <!-- 人物卡片 2 - 待审核 -->
+            <div class="character-card">
+                <div class="character-image">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='280'%3E%3Crect fill='%23764ba2' width='200' height='280'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48'%3E👤%3C/text%3E%3C/svg%3E" alt="薰儿">
+                    <span class="character-status status-pending">⏳ 待审核</span>
+                </div>
+                <div class="character-info">
+                    <div class="character-header">
+                        <span class="character-name">薰儿</span>
+                        <span class="character-role">女主角</span>
+                    </div>
+                    <div class="character-description">
+                        古族千金，气质高贵清冷，容貌绝美。金色眼眸深邃，青丝如瀑，常着淡紫色衣裙。实力深不可测，对萧炎情有独钟，性格温柔却带着距离感。
+                    </div>
+                    <div class="character-traits">
+                        <span class="trait-tag">高贵</span>
+                        <span class="trait-tag">金眸</span>
+                        <span class="trait-tag">紫裙</span>
+                        <span class="trait-tag">古族</span>
+                        <span class="trait-tag">温柔</span>
+                    </div>
+                    <div class="edit-section">
+                        <label>修改描述:</label>
+                        <textarea placeholder="可在此修改人物描述..."></textarea>
+                    </div>
+                </div>
+                <div class="character-actions">
+                    <button class="action-btn btn-approve" onclick="approveCharacter(this)">✅ 通过</button>
+                    <button class="action-btn btn-reject">❌ 拒绝</button>
+                    <button class="action-btn btn-generate">🎨 重新生成</button>
+                </div>
+            </div>
+            
+            <!-- 人物卡片 3 - 生成中 -->
+            <div class="character-card">
+                <div class="character-image">
+                    <div class="image-placeholder">
+                        <div class="icon">⏳</div>
+                        <div>生成中...</div>
+                    </div>
+                    <span class="character-status status-generating">🔄 生成中</span>
+                </div>
+                <div class="character-info">
+                    <div class="character-header">
+                        <span class="character-name">药老</span>
+                        <span class="character-role">导师</span>
+                    </div>
+                    <div class="character-description">
+                        萧炎的老师，灵魂体状态。白发白须，面容慈祥，眼神睿智。常着白色长袍，周身有淡淡光芒。曾是大陆第一炼药师，经验丰富，性格亦师亦友。
+                    </div>
+                    <div class="character-traits">
+                        <span class="trait-tag">白发</span>
+                        <span class="trait-tag">灵魂体</span>
+                        <span class="trait-tag">炼药师</span>
+                        <span class="trait-tag">睿智</span>
+                    </div>
+                </div>
+                <div class="character-actions">
+                    <button class="action-btn btn-disabled" disabled>生成中...</button>
+                    <button class="action-btn btn-outline" style="width:100%">查看详情</button>
+                </div>
+            </div>
+            
+            <!-- 人物卡片 4 - 待审核 -->
+            <div class="character-card">
+                <div class="character-image">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='280'%3E%3Crect fill='%23fa8c16' width='200' height='280'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48'%3E👤%3C/text%3E%3C/svg%3E" alt="纳兰嫣然">
+                    <span class="character-status status-pending">⏳ 待审核</span>
+                </div>
+                <div class="character-info">
+                    <div class="character-header">
+                        <span class="character-name">纳兰嫣然</span>
+                        <span class="character-role">反派/未婚妻</span>
+                    </div>
+                    <div class="character-description">
+                        云岚宗少宗主，天赋出众，性格高傲。容貌秀丽，常着白色劲装，背负长剑。与萧炎有婚约，后因理念不同提出退婚，成为萧炎早期动力。
+                    </div>
+                    <div class="character-traits">
+                        <span class="trait-tag">高傲</span>
+                        <span class="trait-tag">云岚宗</span>
+                        <span class="trait-tag">白衣</span>
+                        <span class="trait-tag">长剑</span>
+                    </div>
+                    <div class="edit-section">
+                        <label>修改描述:</label>
+                        <textarea placeholder="可在此修改人物描述..."></textarea>
+                    </div>
+                </div>
+                <div class="character-actions">
+                    <button class="action-btn btn-approve" onclick="approveCharacter(this)">✅ 通过</button>
+                    <button class="action-btn btn-reject">❌ 拒绝</button>
+                    <button class="action-btn btn-generate">🎨 重新生成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 拒绝原因弹窗 -->
+    <div class="modal-overlay" id="rejectModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>❌ 拒绝原因</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label style="display:block; margin-bottom:10px; font-size:14px; color:#666;">请说明拒绝原因，以便重新生成:</label>
+                <textarea style="width:100%; padding:10px; border:1px solid #d9d9d9; border-radius:6px; min-height:100px; font-family:inherit;" placeholder="例如：人物外貌描述不准确，需要调整..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">取消</button>
+                <button class="btn btn-warning">提交</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let batchMode = false;
+        let selectedCharacters = [];
+        
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.character-card .checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateSelectedCount();
+        }
+        
+        function toggleBatchMode() {
+            batchMode = !batchMode;
+            const batchActions = document.getElementById('batchActions');
+            const checkboxes = document.querySelectorAll('.character-card .checkbox');
+            
+            if (batchMode) {
+                batchActions.classList.add('active');
+                checkboxes.forEach(cb => cb.style.display = 'inline-block');
+            } else {
+                batchActions.classList.remove('active');
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    cb.style.display = 'none';
+                });
+                selectedCharacters = [];
+                updateSelectedCount();
+            }
+        }
+        
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('.character-card .checkbox:checked');
+            selectedCharacters = Array.from(checkboxes).map(cb => cb.closest('.character-card'));
+            document.getElementById('selectedCount').textContent = selectedCharacters.length;
+            document.getElementById('batchApproveBtn').style.display = selectedCharacters.length > 0 ? 'block' : 'none';
+        }
+        
+        function approveCharacter(btn) {
+            btn.closest('.character-card').querySelector('.character-status')
+                .className = 'character-status status-approved';
+            btn.closest('.character-card').querySelector('.character-status')
+                .textContent = '✅ 已通过';
+            btn.closest('.character-actions').innerHTML = `
+                <button class="action-btn btn-disabled" disabled>已通过</button>
+                <button class="action-btn btn-reject">撤回</button>
+                <button class="action-btn btn-outline" style="width:100%">重新生成</button>
+            `;
+        }
+        
+        function closeModal() {
+            document.getElementById('rejectModal').classList.remove('active');
+        }
+        
+        // 初始化隐藏 checkbox
+        document.querySelectorAll('.character-card .checkbox').forEach(cb => {
+            cb.style.display = 'none';
+            cb.addEventListener('change', updateSelectedCount);
+        });
+    </script>
+</body>
+</html>

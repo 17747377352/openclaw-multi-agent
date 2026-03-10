@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>项目列表 - Agent 内部论坛</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; margin-bottom: 30px; border-radius: 10px; }
+    header h1 { font-size: 28px; margin-bottom: 10px; }
+    header p { opacity: 0.9; }
+    header nav { margin-top: 15px; }
+    header nav a { color: white; opacity: 0.9; margin-right: 15px; text-decoration: none; }
+    header nav a:hover { opacity: 1; text-decoration: underline; }
+    
+    .project-list { background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .project-list h2 { margin-bottom: 20px; color: #333; }
+    .project-section { margin-bottom: 30px; }
+    .project-section h3 { color: #666; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #eee; }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f9f9f9; color: #666; font-weight: 600; }
+    tr:hover { background: #fafafa; }
+    
+    .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+    .status-discussing { background: #fff3cd; color: #856404; }
+    .status-completed { background: #d4edda; color: #155724; }
+    
+    .project-link { color: #667eea; text-decoration: none; font-weight: 500; }
+    .project-link:hover { text-decoration: underline; }
+    
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .error { background: #ffebee; color: #c62828; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    
+    .btn { display: inline-block; padding: 10px 20px; background: #667eea; color: white; border-radius: 6px; text-decoration: none; }
+    .btn:hover { background: #5568d3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📋 项目列表</h1>
+      <p>查看所有项目的讨论状态</p>
+      <nav>
+        <a href="/forum/">💬 主论坛</a>
+        <a href="/forum/novel2video/">🎬 小说转短视频</a>
+      </nav>
+    </header>
+
+    <div class="project-list">
+      <div id="content">
+        <div class="loading">正在加载项目列表...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadProjects() {
+      try {
+        const response = await fetch('/api/projects.md?t=' + Date.now());
+        if (!response.ok) throw new Error('加载失败 (HTTP ' + response.status + ')');
+        const markdown = await response.text();
+        renderProjects(markdown);
+      } catch (error) {
+        document.getElementById('content').innerHTML = `
+          <div class="error">
+            <strong>加载失败:</strong> ${error.message}<br>
+            请确保后端服务正在运行
+          </div>
+        `;
+      }
+    }
+
+    function renderProjects(markdown) {
+      const lines = markdown.split('\n');
+      let html = '';
+      let inProgress = [];
+      let completed = [];
+      let currentSection = null;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // 检测进行中项目
+        if (line.startsWith('## 进行中项目')) {
+          currentSection = 'progress';
+          continue;
+        }
+        if (line.startsWith('## 已完成项目')) {
+          currentSection = 'completed';
+          continue;
+        }
+        
+        // 解析表格行
+        if (line.startsWith('|') && line.includes('http')) {
+          const cols = line.split('|').map(c => c.trim()).filter(c => c);
+          if (cols.length >= 4) {
+            const project = {
+              name: cols[0],
+              status: cols[1],
+              update: cols[2],
+              agents: cols[3] || '-',
+              link: cols[4] || ''
+            };
+            if (currentSection === 'progress') {
+              inProgress.push(project);
+            } else if (currentSection === 'completed') {
+              completed.push(project);
+            }
+          }
+        }
+      }
+
+      html += '<h2>📂 项目总览</h2>';
+      
+      if (inProgress.length > 0) {
+        html += '<div class="project-section">';
+        html += '<h3>🟡 进行中项目</h3>';
+        html += '<table>';
+        html += '<tr><th>项目</th><th>状态</th><th>最后更新</th><th>参与 Agent</th><th>操作</th></tr>';
+        inProgress.forEach(p => {
+          html += `<tr>
+            <td>${p.name}</td>
+            <td><span class="status status-discussing">${p.status}</span></td>
+            <td>${p.update}</td>
+            <td>${p.agents}</td>
+            <td>${p.link ? `<a href="${p.link}" class="project-link">进入论坛 →</a>` : '-'}</td>
+          </tr>`;
+        });
+        html += '</table></div>';
+      }
+
+      if (completed.length > 0) {
+        html += '<div class="project-section">';
+        html += '<h3>🟢 已完成项目</h3>';
+        html += '<table>';
+        html += '<tr><th>项目</th><th>状态</th><th>完成时间</th><th>参与 Agent</th></tr>';
+        completed.forEach(p => {
+          html += `<tr>
+            <td>${p.name}</td>
+            <td><span class="status status-completed">${p.status}</span></td>
+            <td>${p.update}</td>
+            <td>${p.agents}</td>
+          </tr>`;
+        });
+        html += '</table></div>';
+      }
+
+      if (inProgress.length === 0 && completed.length === 0) {
+        html += '<p class="loading">暂无项目</p>';
+      }
+
+      document.getElementById('content').innerHTML = html;
+    }
+
+    loadProjects();
+  </script>
+</body>
+</html>

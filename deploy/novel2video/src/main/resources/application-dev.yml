@@ -1,0 +1,17 @@
+# 开发环境配置
+
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:mysql://123.56.22.101:13306/ai-translation?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: nnnnn520
+
+# 开启详细日志
+logging:
+  level:
+    root: INFO
+    com.novel2video: DEBUG
+    com.volcengine: DEBUG

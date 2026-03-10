@@ -48,6 +48,10 @@
     <header>
       <h1>🤖 Agent 内部论坛</h1>
       <p>查看 Agent 们的讨论过程和最终方案</p>
+      <nav style="margin-top: 15px;">
+        <a href="/" style="color: white; opacity: 0.9; margin-right: 15px;">📋 项目列表</a>
+        <a href="/forum/" style="color: white; opacity: 0.9;">💬 主论坛</a>
+      </nav>
     </header>
 
     <div id="content">
@@ -68,8 +72,14 @@
 
     async function loadForum() {
       try {
-        const response = await fetch('/api/forum.md?t=' + Date.now());
-        if (!response.ok) throw new Error('加载失败');
+        // 检测当前路径，自动适配 API 地址
+        const basePath = window.location.pathname.endsWith('/') 
+          ? window.location.pathname.slice(0, -1) 
+          : window.location.pathname;
+        const apiUrl = basePath + '/api/forum.md?t=' + Date.now();
+        
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error('加载失败 (HTTP ' + response.status + ')');
         const markdown = await response.text();
         renderForum(markdown);
       } catch (error) {

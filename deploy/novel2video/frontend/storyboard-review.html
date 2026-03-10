@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分镜审核 - 小说转短视频管理后台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .breadcrumb {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        .breadcrumb a {
+            color: white;
+            text-decoration: none;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-primary:hover {
+            background: #f0f0f0;
+        }
+        
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #73d13d;
+        }
+        
+        .btn-warning {
+            background: #fa8c16;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        .project-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .project-info h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        
+        .project-meta {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .project-meta span {
+            margin-right: 20px;
+        }
+        
+        .progress-info {
+            text-align: right;
+        }
+        
+        .progress-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+        }
+        
+        .group-tabs {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+        
+        .group-tab {
+            padding: 8px 16px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        
+        .group-tab:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .group-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .toolbar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .toolbar-left {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .btn-outline {
+            background: white;
+            border: 1px solid #d9d9d9;
+            color: #666;
+        }
+        
+        .btn-outline:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .storyboard-list {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .storyboard-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: grid;
+            grid-template-columns: 320px 1fr 280px;
+            transition: all 0.3s;
+        }
+        
+        .storyboard-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        
+        .storyboard-preview {
+            height: 280px;
+            background: #f5f7fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid #f0f0f0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .storyboard-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .preview-placeholder {
+            text-align: center;
+            color: #999;
+        }
+        
+        .preview-placeholder .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .storyboard-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        .status-pending { color: #fa8c16; }
+        .status-generating { color: #1890ff; }
+        .status-approved { color: #52c41a; }
+        .status-rejected { color: #ff4d4f; }
+        
+        .scene-number {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(0,0,0,0.7);
+            color: white;
+        }
+        
+        .storyboard-info {
+            padding: 20px;
+        }
+        
+        .storyboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .scene-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .scene-location {
+            font-size: 12px;
+            padding: 3px 8px;
+            background: #f0f5ff;
+            color: #667eea;
+            border-radius: 4px;
+        }
+        
+        .scene-description {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        .prompt-section {
+            background: #fafafa;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        
+        .prompt-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .prompt-content {
+            font-size: 12px;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            line-height: 1.5;
+            max-height: 80px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+        
+        .character-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 12px;
+        }
+        
+        .char-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            background: #fff7e6;
+            color: #fa8c16;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .char-tag img {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .storyboard-actions {
+            padding: 20px;
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-left: 1px solid #f0f0f0;
+        }
+        
+        .action-btn {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .btn-approve {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-approve:hover {
+            background: #73d13d;
+        }
+        
+        .btn-reject {
+            background: white;
+            border: 1px solid #ff4d4f;
+            color: #ff4d4f;
+        }
+        
+        .btn-reject:hover {
+            background: #fff1f0;
+        }
+        
+        .btn-generate {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-generate:hover {
+            background: #764ba2;
+        }
+        
+        .btn-disabled {
+            background: #f0f0f0;
+            color: #999;
+            cursor: not-allowed;
+        }
+        
+        .btn-video {
+            background: #1890ff;
+            color: white;
+        }
+        
+        .btn-video:hover {
+            background: #40a9ff;
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 700px;
+            max-width: 90%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            font-size: 16px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .edit-prompt textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .video-preview {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🎬 分镜审核</h1>
+            <div class="breadcrumb">
+                <a href="project-list.html">项目列表</a> / 
+                <a href="project-list.html">斗破苍穹 - 第一季</a> / 
+                第 1 组 (1-6 章) / 分镜审核
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="location.href='project-list.html'">← 返回列表</button>
+            <button class="btn btn-success" id="batchGenerateBtn" style="display:none;">🎥 批量生成视频</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="project-summary">
+            <div class="project-info">
+                <h2>斗破苍穹 - 第一季 / 第 1 组 (1-6 章)</h2>
+                <div class="project-meta">
+                    <span>📄 6 章</span>
+                    <span>🎬 24 分镜</span>
+                    <span>👥 8 人物</span>
+                    <span>📅 创建于 2026-03-06</span>
+                </div>
+            </div>
+            <div class="progress-info">
+                <div class="progress-label">分镜审核进度</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 50%"></div>
+                </div>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">12/24 已审核</div>
+            </div>
+        </div>
+        
+        <div class="group-tabs">
+            <div class="group-tab">第 1 组 (1-6 章) ✓</div>
+            <div class="group-tab active">第 2 组 (7-12 章)</div>
+            <div class="group-tab">第 3 组 (13-18 章)</div>
+            <div class="group-tab">第 4 组 (19-24 章)</div>
+            <div class="group-tab">第 5 组 (25-30 章)</div>
+        </div>
+        
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <input type="checkbox" class="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                <label for="selectAll" style="font-size: 14px; cursor: pointer;">全选</label>
+                <button class="btn btn-outline btn-sm" onclick="toggleBatchMode()">📋 批量操作</button>
+                <div class="batch-actions" id="batchActions" style="display:none; gap:10px; align-items:center;">
+                    <span style="font-size: 13px; color: #666;">已选择 <span id="selectedCount">0</span> 项</span>
+                    <button class="btn btn-success btn-sm">🎥 批量生成</button>
+                    <button class="btn btn-warning btn-sm">❌ 批量拒绝</button>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-outline btn-sm">🔄 重新生成分镜</button>
+            </div>
+        </div>
+        
+        <div class="storyboard-list">
+            <!-- 分镜卡片 1 - 已通过，视频已生成 -->
+            <div class="storyboard-card">
+                <div class="storyboard-preview">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='280'%3E%3Crect fill='%2352c41a' width='320' height='280'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48'%3E🎬%3C/text%3E%3C/svg%3E" alt="场景 1">
+                    <span class="storyboard-status status-approved">✅ 已通过</span>
+                    <span class="scene-number">场景 01</span>
+                </div>
+                <div class="storyboard-info">
+                    <div class="storyboard-header">
+                        <span class="scene-title">萧炎测试天赋，众人围观</span>
+                        <span class="scene-location">📍 萧家广场</span>
+                    </div>
+                    <div class="scene-description">
+                        清晨，萧家广场人头攒动。十五岁的萧炎走上测试台，手掌按在水晶碑上。光芒闪烁，显示"斗之气：三段"。周围族人议论纷纷，有人嘲笑，有人叹息。
+                    </div>
+                    <div class="prompt-section">
+                        <div class="prompt-label">
+                            <span>AI 提示词</span>
+                            <span style="cursor:pointer; color:#667eea;" onclick="editPrompt(this)">✏️ 编辑</span>
+                        </div>
+                        <div class="prompt-content">
+                            Ancient Chinese family square, morning light, crowd of people in traditional clothing gathering around a testing platform. A 15-year-old boy in black robes places his hand on a glowing crystal monument. The crystal shows dim blue light indicating "Dou Zhi Qi: Level 3". Some people in the crowd are laughing, others look disappointed. Traditional Chinese architecture in background, cinematic lighting, detailed faces.
+                        </div>
+                    </div>
+                    <div class="character-tags">
+                        <span class="char-tag"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle fill='%23667eea' cx='8' cy='8' r='8'/%3E%3C/svg%3E">萧炎</span>
+                        <span class="char-tag"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle fill='%23999' cx='8' cy='8' r='8'/%3E%3C/svg%3E">族人甲</span>
+                        <span class="char-tag"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle fill='%23999' cx='8' cy='8' r='8'/%3E%3C/svg%3E">族人乙</span>
+                    </div>
+                </div>
+                <div class="storyboard-actions">
+                    <button class="action-btn btn-video" onclick="showVideoPreview()">▶️ 预览视频</button>
+                    <button class="action-btn btn-outline" style="width:100%">重新生成</button>
+                </div>
+            </div>
+            
+            <!-- 分镜卡片 2 - 待审核 -->
+            <div class="storyboard-card">
+                <div class="storyboard-preview">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='280'%3E%3Crect fill='%23667eea' width='320' height='280'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48'%3E🎬%3C/text%3E%3C/svg%3E" alt="场景 2">
+                    <span class="storyboard-status status-pending">⏳ 待审核</span>
+                    <span class="scene-number">场景 02</span>
+                </div>
+                <div class="storyboard-info">
+                    <div class="storyboard-header">
+                        <span class="scene-title">萧炎独自坐在后山，神情落寞</span>
+                        <span class="scene-location">📍 萧家后山</span>
+                    </div>
+                    <div class="scene-description">
+                        黄昏，萧炎独自坐在后山悬崖边，望着远方落日。手中握着母亲留下的玉佩，眼神中充满不甘和迷茫。微风吹过，黑发飘动。
+                    </div>
+                    <div class="prompt-section">
+                        <div class="prompt-label">
+                            <span>AI 提示词</span>
+                            <span style="cursor:pointer; color:#667eea;" onclick="editPrompt(this)">✏️ 编辑</span>
+                        </div>
+                        <div class="prompt-content">
+                            A lonely teenage boy sitting on a cliff edge at sunset, looking at the distant horizon. He wears black traditional Chinese robes, holding a jade pendant in his hand. His expression shows determination mixed with confusion. Wind blowing through his black hair. Golden hour lighting, dramatic sky with orange and purple clouds, cinematic composition, emotional atmosphere.
+                        </div>
+                    </div>
+                    <div class="character-tags">
+                        <span class="char-tag"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle fill='%23667eea' cx='8' cy='8' r='8'/%3E%3C/svg%3E">萧炎</span>
+                    </div>
+                    <div style="margin-top:12px; padding-top:12px; border-top:1px solid #f0f0f0;">
+                        <label style="font-size:12px; color:#666; display:block; margin-bottom:5px;">修改提示词:</label>
+                        <textarea style="width:100%; padding:8px; border:1px solid #d9d9d9; border-radius:6px; font-size:12px; font-family:'Courier New',monospace; min-height:60px;" placeholder="可在此修改 AI 提示词..."></textarea>
+                    </div>
+                </div>
+                <div class="storyboard-actions">
+                    <button class="action-btn btn-approve" onclick="approveStoryboard(this)">✅ 通过并生成</button>
+                    <button class="action-btn btn-reject">❌ 拒绝</button>
+                    <button class="action-btn btn-generate">🎨 重新生成首帧</button>
+                </div>
+            </div>
+            
+            <!-- 分镜卡片 3 - 生成中 -->
+            <div class="storyboard-card">
+                <div class="storyboard-preview">
+                    <div class="preview-placeholder">
+                        <div class="icon">⏳</div>
+                        <div>生成首帧中...</div>
+                    </div>
+                    <span class="storyboard-status status-generating">🔄 生成中</span>
+                    <span class="scene-number">场景 03</span>
+                </div>
+                <div class="storyboard-info">
+                    <div class="storyboard-header">
+                        <span class="scene-title">药老灵魂现身，与萧炎对话</span>
+                        <span class="scene-location">📍 萧家后山</span>
+                    </div>
+                    <div class="scene-description">
+                        萧炎沉浸在思绪中，突然一道苍老的身影从戒指中飘出。白发白须的药老悬浮在空中，周身散发着淡淡光芒。萧炎震惊地站起来，警惕地看着这个神秘的老人。
+                    </div>
+                    <div class="prompt-section">
+                        <div class="prompt-label">
+                            <span>AI 提示词</span>
+                        </div>
+                        <div class="prompt-content">
+                            A mystical scene at dusk. An elderly man with white hair and beard, wearing flowing white robes, materializes from thin air as a translucent spirit. He floats above the ground, surrounded by a faint golden glow. Below him, a shocked teenage boy in black robes stands up, looking at the spirit with caution and surprise. The spirit has wise, kind eyes. Ethereal lighting, magical atmosphere, fantasy style.
+                        </div>
+                    </div>
+                    <div class="character-tags">
+                        <span class="char-tag"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle fill='%23667eea' cx='8' cy='8' r='8'/%3E%3C/svg%3E">萧炎</span>
+                        <span class="char-tag"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle fill='%23764ba2' cx='8' cy='8' r='8'/%3E%3C/svg%3E">药老</span>
+                    </div>
+                </div>
+                <div class="storyboard-actions">
+                    <button class="action-btn btn-disabled" disabled>生成中...</button>
+                    <button class="action-btn btn-outline" style="width:100%">查看详情</button>
+                </div>
+            </div>
+            
+            <!-- 分镜卡片 4 - 待审核 -->
+            <div class="storyboard-card">
+                <div class="storyboard-preview">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='280'%3E%3Crect fill='%23fa8c16' width='320' height='280'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48'%3E🎬%3C/text%3E%3C/svg%3E" alt="场景 4">
+                    <span class="storyboard-status status-pending">⏳ 待审核</span>
+                    <span class="scene-number">场景 04</span>
+                </div>
+                <div class="storyboard-info">
+                    <div class="storyboard-header">
+                        <span class="scene-title">纳兰嫣然前来退婚，气势逼人</span>
+                        <span class="scene-location">📍 萧家大厅</span>
+                    </div>
+                    <div class="scene-description">
+                        萧家大厅内气氛凝重。纳兰嫣然身着白色劲装，背负长剑，在云岚宗长老陪同下走进大厅。她面容清冷，眼神坚定。萧战坐在主位，脸色难看。萧炎站在一旁，拳头紧握。
+                    </div>
+                    <div class="prompt-section">
+                        <div class="prompt-label">
+                            <span>AI 提示词</span>
+                            <span style="cursor:pointer; color:#667eea;" onclick="editPrompt(this)">✏️ 编辑</span>
+                        </div>
+                        <div class="prompt-content">
+                            Interior of a traditional Chinese family hall, tense atmosphere. A young woman in white martial arts robes enters with an elderly man in blue robes (Yun Lan Sect elder). The woman carries a longsword on her back, has a cold and determined expression. The family head sits at the main seat looking displeased. A teenage boy in black stands to the side, fists clenched. Traditional Chinese furniture, wooden pillars, afternoon light streaming through windows, dramatic tension.
+                        </div>
+                    </div>
+                    <div class="character-tags">
+                        <span class="char-tag"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle fill='%23667eea' cx='8' cy='8' r='8'/%3E%3C/svg%3E">萧炎</span>
+                        <span class="char-tag"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle fill='%23fa8c16' cx='8' cy='8' r='8'/%3E%3C/svg%3E">纳兰嫣然</span>
+                        <span class="char-tag"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle fill='%23999' cx='8' cy='8' r='8'/%3E%3C/svg%3E">云岚宗长老</span>
+                    </div>
+                    <div style="margin-top:12px; padding-top:12px; border-top:1px solid #f0f0f0;">
+                        <label style="font-size:12px; color:#666; display:block; margin-bottom:5px;">修改提示词:</label>
+                        <textarea style="width:100%; padding:8px; border:1px solid #d9d9d9; border-radius:6px; font-size:12px; font-family:'Courier New',monospace; min-height:60px;" placeholder="可在此修改 AI 提示词..."></textarea>
+                    </div>
+                </div>
+                <div class="storyboard-actions">
+                    <button class="action-btn btn-approve" onclick="approveStoryboard(this)">✅ 通过并生成</button>
+                    <button class="action-btn btn-reject">❌ 拒绝</button>
+                    <button class="action-btn btn-generate">🎨 重新生成首帧</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑提示词弹窗 -->
+    <div class="modal-overlay" id="editPromptModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>✏️ 编辑 AI 提示词</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="edit-prompt">
+                    <label style="display:block; margin-bottom:10px; font-size:14px; color:#666;">英文提示词 (用于 AI 生图):</label>
+                    <textarea placeholder="输入或修改提示词...">A lonely teenage boy sitting on a cliff edge at sunset, looking at the distant horizon. He wears black traditional Chinese robes, holding a jade pendant in his hand. His expression shows determination mixed with confusion. Wind blowing through his black hair. Golden hour lighting, dramatic sky with orange and purple clouds, cinematic composition, emotional atmosphere.</textarea>
+                </div>
+                <div style="margin-top:15px; padding:12px; background:#f6ffed; border:1px solid #b7eb8f; border-radius:6px;">
+                    <div style="font-size:12px; color:#52c41a; margin-bottom:5px;">💡 提示词优化建议:</div>
+                    <ul style="font-size:12px; color:#666; padding-left:20px; margin:0;">
+                        <li>添加光线描述 (cinematic lighting, golden hour)</li>
+                        <li>指定构图方式 (close-up, wide shot, rule of thirds)</li>
+                        <li>描述情绪氛围 (emotional, dramatic, tense)</li>
+                        <li>包含服装细节 (traditional Chinese robes, black outfit)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeEditModal()">取消</button>
+                <button class="btn btn-primary" onclick="savePrompt()">💾 保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 视频预览弹窗 -->
+    <div class="modal-overlay" id="videoPreviewModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>▶️ 视频预览</h3>
+                <button class="modal-close" onclick="closeVideoModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="video-preview">🎬</div>
+                <div style="margin-top:15px;">
+                    <div style="font-size:14px; font-weight:600; margin-bottom:8px;">场景 01: 萧炎测试天赋</div>
+                    <div style="font-size:12px; color:#666;">时长：5.2 秒 | 分辨率：1080x1920 | 状态：已完成</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeVideoModal()">关闭</button>
+                <button class="btn btn-primary">⬇️ 下载视频</button>
+                <button class="btn btn-success">🎥 重新生成</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.storyboard-card .checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateSelectedCount();
+        }
+        
+        function toggleBatchMode() {
+            const batchActions = document.getElementById('batchActions');
+            const checkboxes = document.querySelectorAll('.storyboard-card .checkbox');
+            
+            if (batchActions.style.display === 'none') {
+                batchActions.style.display = 'flex';
+                checkboxes.forEach(cb => cb.style.display = 'inline-block');
+            } else {
+                batchActions.style.display = 'none';
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    cb.style.display = 'none';
+                });
+                updateSelectedCount();
+            }
+        }
+        
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('.storyboard-card .checkbox:checked');
+            document.getElementById('selectedCount').textContent = checkboxes.length;
+            document.getElementById('batchGenerateBtn').style.display = checkboxes.length > 0 ? 'block' : 'none';
+        }
+        
+        function approveStoryboard(btn) {
+            btn.closest('.storyboard-card').querySelector('.storyboard-status')
+                .className = 'storyboard-status status-generating';
+            btn.closest('.storyboard-card').querySelector('.storyboard-status')
+                .textContent = '🔄 生成中';
+            btn.closest('.storyboard-actions').innerHTML = `
+                <button class="action-btn btn-disabled" disabled>生成中...</button>
+                <button class="action-btn btn-outline" style="width:100%">查看详情</button>
+            `;
+        }
+        
+        function editPrompt(el) {
+            document.getElementById('editPromptModal').classList.add('active');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editPromptModal').classList.remove('active');
+        }
+        
+        function savePrompt() {
+            closeEditModal();
+            alert('提示词已保存！');
+        }
+        
+        function showVideoPreview() {
+            document.getElementById('videoPreviewModal').classList.add('active');
+        }
+        
+        function closeVideoModal() {
+            document.getElementById('videoPreviewModal').classList.remove('active');
+        }
+        
+        // 初始化隐藏 checkbox
+        document.querySelectorAll('.storyboard-card .checkbox').forEach(cb => {
+            cb.style.display = 'none';
+            cb.addEventListener('change', updateSelectedCount);
+        });
+    </script>
+</body>
+</html>

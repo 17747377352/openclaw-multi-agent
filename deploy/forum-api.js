@@ -25,9 +25,49 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // API: 获取 forum.md
+  // API: 获取 forum.md (主论坛)
   if (req.url === '/api/forum.md' || req.url.startsWith('/api/forum.md?')) {
     const forumPath = path.join(WORKSPACE, 'shared', 'forum.md');
+    
+    fs.readFile(forumPath, 'utf8', (err, data) => {
+      if (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+        return;
+      }
+
+      res.writeHead(200, { 
+        'Content-Type': 'text/markdown; charset=utf-8',
+        'Cache-Control': 'no-cache'
+      });
+      res.end(data);
+    });
+    return;
+  }
+
+  // API: 获取 novel2video 论坛
+  if (req.url === '/novel2video/api/forum.md' || req.url.startsWith('/novel2video/api/forum.md?')) {
+    const forumPath = path.join(WORKSPACE, 'shared', 'forum-novel2video.md');
+    
+    fs.readFile(forumPath, 'utf8', (err, data) => {
+      if (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+        return;
+      }
+
+      res.writeHead(200, { 
+        'Content-Type': 'text/markdown; charset=utf-8',
+        'Cache-Control': 'no-cache'
+      });
+      res.end(data);
+    });
+    return;
+  }
+
+  // API: 获取 projects.md
+  if (req.url === '/api/projects.md' || req.url.startsWith('/api/projects.md?')) {
+    const forumPath = path.join(WORKSPACE, 'shared', 'projects.md');
     
     fs.readFile(forumPath, 'utf8', (err, data) => {
       if (err) {
