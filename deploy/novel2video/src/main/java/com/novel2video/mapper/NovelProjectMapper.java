@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 小说项目 Mapper
@@ -39,4 +40,9 @@ public interface NovelProjectMapper {
      * 删除项目
      */
     int deleteById(@Param("id") Long id);
+    
+    /**
+     * 查询项目列表（带条件）
+     */
+    List<NovelProject> selectProjects(@Param("params") Map<String, Object> params);
 }

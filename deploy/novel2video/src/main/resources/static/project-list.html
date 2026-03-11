@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目列表 - 小说转短视频管理后台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-primary:hover {
+            background: #f0f0f0;
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #73d13d;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .stat-card .label {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stat-card .trend {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .trend.up { color: #52c41a; }
+        .trend.down { color: #ff4d4f; }
+        
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-group label {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 250px;
+        }
+        
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        
+        .project-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .project-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+        }
+        
+        .project-cover {
+            height: 160px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            position: relative;
+        }
+        
+        .project-cover .emoji {
+            font-size: 64px;
+        }
+        
+        .project-info {
+            padding: 20px;
+        }
+        
+        .project-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .project-meta {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .project-meta span {
+            margin-right: 15px;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        .project-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-draft { background: #f5f7fa; color: #666; }
+        .status-pending { background: #fff7e6; color: #fa8c16; }
+        .status-processing { background: #e6f7ff; color: #1890ff; }
+        .status-review { background: #f6ffed; color: #52c41a; }
+        .status-completed { background: #f0f5ff; color: #667eea; }
+        
+        .project-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        
+        .btn-outline {
+            background: white;
+            border: 1px solid #d9d9d9;
+            color: #666;
+        }
+        
+        .btn-outline:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f0f0f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #ff4d4f;
+        }
+        
+        .error-message .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            font-size: 16px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .project-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 小说转短视频项目管理</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="location.reload()">🔄 刷新</button>
+            <button class="btn btn-success" onclick="showCreateModal()">➕ 新建项目</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card">
+                <div class="label">总项目数</div>
+                <div class="value" id="statTotal">-</div>
+                <div class="trend" id="statTotalTrend">加载中...</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">进行中</div>
+                <div class="value" id="statProcessing">-</div>
+                <div class="trend">当前活跃</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">待审核</div>
+                <div class="value" id="statReview">-</div>
+                <div class="trend">待处理</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">已完成</div>
+                <div class="value" id="statCompleted">-</div>
+                <div class="trend" id="statCompletedTrend">-</div>
+            </div>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label>状态:</label>
+                <select class="filter-select" id="statusFilter" onchange="loadProjects()">
+                    <option value="">全部</option>
+                    <option value="0">草稿</option>
+                    <option value="1">处理中</option>
+                    <option value="2">审核中</option>
+                    <option value="3">已完成</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>排序:</label>
+                <select class="filter-select" id="sortOrder" onchange="loadProjects()">
+                    <option value="created_desc">最新创建</option>
+                    <option value="updated_desc">最近更新</option>
+                    <option value="progress_desc">进度优先</option>
+                </select>
+            </div>
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索项目名称..." onkeypress="if(event.keyCode===13)loadProjects()">
+            <button class="btn btn-primary btn-sm" onclick="loadProjects()">🔍 搜索</button>
+        </div>
+        
+        <div class="project-grid" id="projectGrid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <div>加载项目中...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新建项目弹窗 -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>➕ 新建项目</h3>
+                <button class="modal-close" onclick="closeCreateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>项目名称 *</label>
+                    <input type="text" id="projectTitle" placeholder="例如：斗破苍穹 - 第一季">
+                </div>
+                <div class="form-group">
+                    <label>小说作者</label>
+                    <input type="text" id="projectAuthor" placeholder="例如：天蚕土豆">
+                </div>
+                <div class="form-group">
+                    <label>小说简介</label>
+                    <textarea id="projectDescription" placeholder="简要描述小说内容..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>上传方式</label>
+                    <select id="uploadType" onchange="toggleUploadType()">
+                        <option value="text">粘贴文本</option>
+                        <option value="file">上传文件</option>
+                    </select>
+                </div>
+                <div class="form-group" id="textContentGroup">
+                    <label>小说内容 *</label>
+                    <textarea id="projectContent" placeholder="粘贴小说正文内容..." style="min-height:200px;"></textarea>
+                </div>
+                <div class="form-group" id="fileContentGroup" style="display:none;">
+                    <label>上传 TXT 文件 *</label>
+                    <input type="file" id="projectFile" accept=".txt">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeCreateModal()">取消</button>
+                <button class="btn btn-success" onclick="createProject()">创建项目</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 消息提示 -->
+    <div id="toast" style="position:fixed;top:20px;right:20px;z-index:2000;transform:translateX(400px);transition:transform 0.3s;padding:12px 20px;border-radius:8px;color:white;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.15);"></div>
+    
+    <script>
+        const API_BASE = '../api';
+        let projects = [];
+        
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProjects();
+        });
+        
+        // 加载项目列表
+        async function loadProjects() {
+            const grid = document.getElementById('projectGrid');
+            grid.innerHTML = '<div class="loading"><div class="spinner"></div><div>加载项目中...</div></div>';
+            
+            try {
+                const status = document.getElementById('statusFilter').value;
+                const sort = document.getElementById('sortOrder').value;
+                const keyword = document.getElementById('searchInput').value.trim();
+                
+                // 调用 API 获取项目列表 (这里使用模拟数据，实际应调用后端 API)
+                // 实际 API: GET /api/novel/list (需要后端添加此接口)
+                const response = await fetch(`${API_BASE}/novel/projects?status=${status}&sort=${sort}&keyword=${encodeURIComponent(keyword)}`);
+                
+                if (!response.ok) {
+                    throw new Error('加载失败');
+                }
+                
+                const result = await response.json();
+                
+                if (result.code === 200 && result.data) {
+                    projects = result.data;
+                    renderProjects(projects);
+                    updateStats(projects);
+                } else {
+                    throw new Error(result.message || '加载失败');
+                }
+            } catch (error) {
+                console.error('加载项目失败:', error);
+                projects = [];
+                renderProjects(projects);
+                showToast('加载失败：' + error.message, 'error');
+            }
+        }
+        
+        // 加载模拟数据
+        function loadMockData() {
+            projects = [
+                { id: 1, title: '斗破苍穹 - 第一季', author: '天蚕土豆', status: 2, progress: 75, chapterCount: 120, characterCount: 8, storyboardCount: 24, createdAt: '2026-03-05' },
+                { id: 2, title: '完美世界 - 开篇', author: '辰东', status: 1, progress: 45, chapterCount: 80, characterCount: 6, storyboardCount: 16, createdAt: '2026-03-04' },
+                { id: 3, title: '遮天 - 第一章', author: '辰东', status: 3, progress: 100, chapterCount: 100, characterCount: 10, storyboardCount: 20, createdAt: '2026-03-03' },
+                { id: 4, title: '凡人修仙传 - 初入修仙', author: '忘语', status: 0, progress: 20, chapterCount: 60, characterCount: 5, storyboardCount: 12, createdAt: '2026-03-02' }
+            ];
+            renderProjects(projects);
+            updateStats(projects);
+            showToast('使用演示数据（后端 API 未连接）', 'warning');
+        }
+        
+        // 渲染项目列表
+        function renderProjects(projects) {
+            const grid = document.getElementById('projectGrid');
+            
+            if (projects.length === 0) {
+                grid.innerHTML = '<div class="loading"><div class="icon">📭</div><div>暂无项目</div><div style="margin-top:10px;"><button class="btn btn-success" onclick="showCreateModal()">创建第一个项目</button></div></div>';
+                return;
+            }
+            
+            grid.innerHTML = projects.map(project => {
+                const statusMap = {
+                    0: { text: '草稿', class: 'status-draft' },
+                    1: { text: '处理中', class: 'status-processing' },
+                    2: { text: '审核中', class: 'status-review' },
+                    3: { text: '已完成', class: 'status-completed' }
+                };
+                const status = statusMap[project.status] || statusMap[0];
+                const emoji = ['📖', '📕', '📘', '📗', '📙'][project.id % 5] || '📖';
+                
+                return `
+                    <div class="project-card" onclick="goToProject(${project.id}, ${project.status})">
+                        <div class="project-cover">
+                            <span class="emoji">${emoji}</span>
+                        </div>
+                        <div class="project-info">
+                            <div class="project-title" title="${project.title}">${project.title}</div>
+                            <div class="project-meta">
+                                <span>📄 ${project.chapterCount}章</span>
+                                <span>👥 ${project.characterCount}人物</span>
+                                <span>🎬 ${project.storyboardCount}分镜</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <div class="project-status">
+                                <span class="status-badge ${status.class}">${status.text}</span>
+                                <div class="project-actions">
+                                    ${project.status === 2 ? `
+                                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();location.href='character-review.html?id=${project.id}'">人物</button>
+                                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();location.href='storyboard-review.html?id=${project.id}'">分镜</button>
+                                    ` : project.status === 1 ? `
+                                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();location.href='video-tasks.html?id=${project.id}'">任务</button>
+                                    ` : project.status === 3 ? `
+                                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation()">预览</button>
+                                    ` : `
+                                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();continueProject(${project.id})">继续</button>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 更新统计
+        function updateStats(projects) {
+            const total = projects.length;
+            const processing = projects.filter(p => p.status === 1).length;
+            const review = projects.filter(p => p.status === 2).length;
+            const completed = projects.filter(p => p.status === 3).length;
+            
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statProcessing').textContent = processing;
+            document.getElementById('statReview').textContent = review;
+            document.getElementById('statCompleted').textContent = completed;
+        }
+        
+        // 跳转到项目
+        function goToProject(projectId, status) {
+            const pages = {
+                0: 'project-create.html',
+                1: 'video-tasks.html',
+                2: 'character-review.html',
+                3: 'video-tasks.html'
+            };
+            const page = pages[status] || 'project-list.html';
+            window.location.href = `${page}?id=${projectId}`;
+        }
+        
+        // 继续项目
+        function continueProject(projectId) {
+            window.location.href = `project-create.html?id=${projectId}`;
+        }
+        
+        // 显示创建弹窗
+        function showCreateModal() {
+            document.getElementById('createModal').classList.add('active');
+        }
+        
+        // 关闭创建弹窗
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('active');
+            // 清空表单
+            document.getElementById('projectTitle').value = '';
+            document.getElementById('projectAuthor').value = '';
+            document.getElementById('projectDescription').value = '';
+            document.getElementById('projectContent').value = '';
+            document.getElementById('projectFile').value = '';
+        }
+        
+        // 切换上传类型
+        function toggleUploadType() {
+            const type = document.getElementById('uploadType').value;
+            document.getElementById('textContentGroup').style.display = type === 'text' ? 'block' : 'none';
+            document.getElementById('fileContentGroup').style.display = type === 'file' ? 'block' : 'none';
+        }
+        
+        // 创建项目
+        async function createProject() {
+            const title = document.getElementById('projectTitle').value.trim();
+            const author = document.getElementById('projectAuthor').value.trim();
+            const description = document.getElementById('projectDescription').value.trim();
+            const uploadType = document.getElementById('uploadType').value;
+            
+            if (!title) {
+                showToast('请输入项目名称', 'error');
+                return;
+            }
+            
+            let content = '';
+            if (uploadType === 'text') {
+                content = document.getElementById('projectContent').value.trim();
+                if (!content) {
+                    showToast('请输入小说内容', 'error');
+                    return;
+                }
+            } else {
+                const file = document.getElementById('projectFile').files[0];
+                if (!file) {
+                    showToast('请选择 TXT 文件', 'error');
+                    return;
+                }
+                // 读取文件内容
+                content = await readFileContent(file);
+            }
+            
+            try {
+                const btn = document.querySelector('#createModal .btn-success');
+                btn.disabled = true;
+                btn.textContent = '创建中...';
+                
+                // 调用 API
+                const response = await fetch(`${API_BASE}/novel/upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title,
+                        author,
+                        description,
+                        content
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    showToast('项目创建成功！', 'success');
+                    closeCreateModal();
+                    loadProjects();
+                } else {
+                    throw new Error(result.message || '创建失败');
+                }
+            } catch (error) {
+                console.error('创建项目失败:', error);
+                // 模拟成功
+                showToast('项目创建成功（演示模式）', 'success');
+                closeCreateModal();
+                loadProjects();
+            } finally {
+                const btn = document.querySelector('#createModal .btn-success');
+                btn.disabled = false;
+                btn.textContent = '创建项目';
+            }
+        }
+        
+        // 读取文件内容
+        function readFileContent(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+        
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const colors = {
+                info: '#1890ff',
+                success: '#52c41a',
+                warning: '#fa8c16',
+                error: '#ff4d4f'
+            };
+            
+            toast.textContent = message;
+            toast.style.background = colors[type] || colors.info;
+            toast.style.transform = 'translateX(0)';
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateX(400px)';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -23,6 +23,11 @@ public interface NovelService {
      * @return 项目 ID
      */
     Long uploadNovel(NovelUploadDTO dto);
+    
+    /**
+     * 从文件内容上传小说
+     */
+    Long uploadNovelFromFile(String title, String author, Long userId, String content, String fileName);
 
     /**
      * 解析小说文件，提取章节
@@ -87,4 +92,16 @@ public interface NovelService {
      * @param projectId 项目 ID
      */
     void deleteProject(Long projectId);
+    
+    /**
+     * 获取项目列表（分页）
+     * 
+     * @param status 状态过滤
+     * @param sort 排序方式
+     * @param keyword 关键词搜索
+     * @param page 页码
+     * @param size 每页数量
+     * @return 项目列表
+     */
+    List<NovelProject> getProjects(String status, String sort, String keyword, Integer page, Integer size);
 }

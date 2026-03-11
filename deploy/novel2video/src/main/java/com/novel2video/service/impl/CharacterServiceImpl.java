@@ -292,7 +292,7 @@ public class CharacterServiceImpl implements CharacterService {
         } catch (Exception e) {
             log.error("豆包生图失败：characterId={}", characterId, e);
             character.setSeedStatus(3); // 失败
-            character.setFailReason(e.getMessage());
+            // character.setFailReason(e.getMessage()); // 字段不存在，临时注释
             characterMapper.update(character);
             throw new RuntimeException("生图失败：" + e.getMessage(), e);
         }

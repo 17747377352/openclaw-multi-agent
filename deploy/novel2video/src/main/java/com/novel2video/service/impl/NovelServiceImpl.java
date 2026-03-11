@@ -439,4 +439,89 @@ public class NovelServiceImpl implements NovelService {
         if (lastSlash > lastDot) return "";
         return filePath.substring(lastDot + 1);
     }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long uploadNovelFromFile(String title, String author, Long userId, String content, String fileName) {
+        log.info("从文件内容上传小说：title={}, fileName={}, contentLength={}", title, fileName, content.length());
+        
+        try {
+            // 创建项目记录
+            NovelProject project = new NovelProject();
+            project.setTitle(title);
+            project.setAuthor(author);
+            project.setOriginalFilePath("upload:" + fileName);
+            project.setStatus(1);
+            project.setUserId(userId);
+            projectMapper.insert(project);
+            
+            Long projectId = project.getId();
+            log.info("项目创建成功：projectId={}", projectId);
+            
+            // 解析章节
+            List<Chapter> chapters;
+            String fileExt = getFileExtension(fileName).toLowerCase();
+            
+            if ("epub".equals(fileExt)) {
+                chapters = parseEpubContent(content, projectId);
+            } else {
+                chapters = parseTxtContent(content, projectId);
+            }
+            
+            if (chapters.isEmpty()) {
+                throw new RuntimeException("未解析到任何章节，请检查文件格式");
+            }
+            
+            // 批量插入章节
+            chapterMapper.batchInsert(chapters);
+            log.info("章节入库成功：count={}", chapters.size());
+            
+            // 更新项目统计
+            project.setTotalChapters(chapters.size());
+            long totalWords = chapters.stream().mapToLong(Chapter::getWordCount).sum();
+            project.setTotalWords(totalWords);
+            projectMapper.update(project);
+            
+            // 自动分组
+            autoGroupChapters(projectId, 5);
+            
+            return projectId;
+            
+        } catch (Exception e) {
+            log.error("上传小说失败", e);
+            throw new RuntimeException("上传失败：" + e.getMessage(), e);
+        }
+    }
+    
+    @Override
+    public List<NovelProject> getProjects(String status, String sort, String keyword, Integer page, Integer size) {
+        // 构建查询条件
+        Map<String, Object> params = new HashMap<>();
+        
+        if (status != null && !status.isEmpty()) {
+            params.put("status", Integer.parseInt(status));
+        }
+        
+        if (keyword != null && !keyword.isEmpty()) {
+            params.put("keyword", "%" + keyword + "%");
+        }
+        
+        // 处理分页
+        int offset = (page - 1) * size;
+        params.put("offset", offset);
+        params.put("limit", size);
+        
+        // 处理排序
+        String orderBy = "created_at DESC";
+        if ("created_asc".equals(sort)) {
+            orderBy = "created_at ASC";
+        } else if ("title_desc".equals(sort)) {
+            orderBy = "title DESC";
+        } else if ("title_asc".equals(sort)) {
+            orderBy = "title ASC";
+        }
+        params.put("orderBy", orderBy);
+        
+        return projectMapper.selectProjects(params);
+    }
 }

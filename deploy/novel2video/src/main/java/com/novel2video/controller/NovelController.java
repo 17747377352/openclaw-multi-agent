@@ -140,4 +140,27 @@ public class NovelController {
         }
         return result;
     }
+    
+    /**
+     * 获取项目列表（分页）
+     */
+    @GetMapping("/projects")
+    public Map<String, Object> getProjects(@RequestParam(required = false) String status,
+                                          @RequestParam(defaultValue = "created_desc") String sort,
+                                          @RequestParam(required = false) String keyword,
+                                          @RequestParam(defaultValue = "1") Integer page,
+                                          @RequestParam(defaultValue = "10") Integer size) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            List<NovelProject> projects = novelService.getProjects(status, sort, keyword, page, size);
+            result.put("success", true);
+            result.put("data", projects);
+            result.put("total", projects.size()); // 实际应该查询总记录数
+        } catch (Exception e) {
+            log.error("查询项目列表失败", e);
+            result.put("success", false);
+            result.put("message", "查询失败：" + e.getMessage());
+        }
+        return result;
+    }
 }
