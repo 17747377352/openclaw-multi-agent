@@ -8,6 +8,7 @@ import com.novel2video.mapper.ChapterMapper;
 import com.novel2video.mapper.CharacterMapper;
 import com.novel2video.service.CharacterService;
 import com.novel2video.service.OssService;
+import com.novel2video.util.AnimePromptUtil;
 import com.novel2video.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,15 +73,11 @@ public class CharacterServiceImpl implements CharacterService {
         "- role: 角色类型，如主角、配角、反派等（字符串）\n" +
         "\n" +
         "只提取有外貌描述的人物，不要提取没有外貌特征的人物。\n" +
+        "人物 description 只能根据原文已有信息提炼，不要脑补剧情外设定，不要凭常识补完不存在的发饰、武器、身份背景。\n" +
+        "如果原文外貌信息不足，只写原文能确定的特征，不要为了凑字数扩写。\n" +
         "返回纯 JSON 数组，不要有其他说明文字。\n" +
         "\n" +
         "小说内容：\n%s";
-    
-    // 生图 Prompt 模板
-    private static final String IMAGE_GENERATION_PROMPT = 
-        "角色设计图，全身像，正面视角，高清细节，专业角色设定图风格，" +
-        "白色背景，三视图风格，清晰的轮廓和细节。" +
-        "人物：%s，描述：%s";
     
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -133,10 +130,10 @@ public class CharacterServiceImpl implements CharacterService {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", kimiModel);
         requestBody.put("messages", Arrays.asList(
-            Map.of("role", "system", "content", "你是一个专业的小说人物分析助手，擅长从文本中提取人物信息并以 JSON 格式返回。"),
+            Map.of("role", "system", "content", "你是一个专业的小说人物信息抽取助手，只能依据原文提取人物信息，严禁脑补设定，返回纯 JSON。"),
             Map.of("role", "user", "content", prompt)
         ));
-        requestBody.put("temperature", 0.3);
+        requestBody.put("temperature", 0.2);
         requestBody.put("max_tokens", 4000);
         
         try {
@@ -305,7 +302,7 @@ public class CharacterServiceImpl implements CharacterService {
         }
         
         // 组装生图 Prompt
-        String prompt = String.format(IMAGE_GENERATION_PROMPT, character.getName(), description);
+        String prompt = AnimePromptUtil.buildCharacterDesignPrompt(character.getName(), description);
         
         // 更新状态为生成中
         character.setSeedStatus(1);

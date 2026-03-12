@@ -11,6 +11,7 @@ import com.novel2video.mapper.ChapterMapper;
 import com.novel2video.mapper.CharacterMapper;
 import com.novel2video.mapper.StoryboardMapper;
 import com.novel2video.service.StoryboardService;
+import com.novel2video.util.AnimePromptUtil;
 import com.novel2video.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,21 +68,16 @@ public class StoryboardServiceImpl implements StoryboardService {
     
     // 分镜生成 Prompt 模板
     private static final String STORYBOARD_GENERATE_PROMPT = 
-        "请根据以下小说章节内容，生成分镜脚本。\n" +
+        "请根据以下小说章节内容，生成适合 2D 动漫动态漫画制作的分镜脚本。\n" +
         "要求：\n" +
         "1. 将章节内容拆分成 5-10 个关键场景\n" +
         "2. 每个场景包含：scene_number（序号）、description（场景描述，100-200 字）、character_names（涉及人物名称列表）\n" +
-        "3. 场景描述要包含：场景环境、人物动作、情绪氛围、镜头角度建议\n" +
-        "4. 以 JSON 数组格式返回，不要有其他说明文字\n" +
+        "3. 场景描述要包含：场景环境、单个关键动作、情绪氛围、镜头角度建议\n" +
+        "4. 场景描述必须适合先生成静态首帧图，再生成 5 秒动漫视频，不要设计复杂连续动作\n" +
+        "5. 同一角色在所有场景里保持同一发型、服装、年龄感和气质，不要改设定\n" +
+        "6. 以 JSON 数组格式返回，不要有其他说明文字\n" +
         "\n" +
         "章节内容：\n%s";
-    
-    // 首帧图生成 Prompt 模板
-    private static final String FRAME_IMAGE_PROMPT = 
-        "电影分镜画面，高质量，电影级质感，细节丰富，专业摄影风格。\n" +
-        "场景描述：%s\n" +
-        "%s" +
-        "画面要求：16:9 电影画幅，高清细节，专业调色，电影感光影";
     
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -144,10 +140,10 @@ public class StoryboardServiceImpl implements StoryboardService {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", kimiModel);
         requestBody.put("messages", Arrays.asList(
-            Map.of("role", "system", "content", "你是一个专业的分镜脚本师，擅长将小说内容转化为可视化的分镜脚本。返回纯 JSON 数组格式。"),
+            Map.of("role", "system", "content", "你是一个专业的 2D 动漫动态漫画分镜脚本师，擅长将小说内容转化为适合静态首帧图和短视频镜头的分镜脚本。返回纯 JSON 数组格式，不要设计复杂长动作。"),
             Map.of("role", "user", "content", prompt)
         ));
-        requestBody.put("temperature", 0.5);
+        requestBody.put("temperature", 0.4);
         requestBody.put("max_tokens", 4000);
         
         try {
@@ -331,7 +327,7 @@ public class StoryboardServiceImpl implements StoryboardService {
         if (characterIds != null && !characterIds.isEmpty()) {
             for (Long charId : characterIds) {
                 NovelCharacter character = characterMapper.selectById(charId);
-                if (character != null && character.getSeedImageUrl() != null) {
+                if (character != null) {
                     characters.add(character);
                 }
             }
@@ -369,29 +365,7 @@ public class StoryboardServiceImpl implements StoryboardService {
      * 组装首帧图提示词
      */
     private String buildFrameImagePrompt(String sceneDescription, List<NovelCharacter> characters) {
-        StringBuilder promptBuilder = new StringBuilder();
-        
-        // 基础场景描述
-        promptBuilder.append("电影分镜画面，高质量，电影级质感，细节丰富，专业摄影风格。\n");
-        promptBuilder.append("场景：").append(sceneDescription).append("\n");
-        
-        // 添加人物参考（如果有）
-        if (!characters.isEmpty()) {
-            promptBuilder.append("人物参考：\n");
-            for (int i = 0; i < characters.size(); i++) {
-                NovelCharacter c = characters.get(i);
-                promptBuilder.append("- ")
-                    .append(c.getName())
-                    .append(": ")
-                    .append(c.getSeedImageUrl() != null ? "[图:" + c.getSeedImageUrl() + "]" : c.getDescription())
-                    .append("\n");
-            }
-        }
-        
-        // 画面要求
-        promptBuilder.append("画面要求：16:9 电影画幅，高清细节，专业调色，电影感光影，戏剧性构图");
-        
-        return promptBuilder.toString();
+        return AnimePromptUtil.buildStoryboardFramePrompt(sceneDescription, characters);
     }
     
     /**

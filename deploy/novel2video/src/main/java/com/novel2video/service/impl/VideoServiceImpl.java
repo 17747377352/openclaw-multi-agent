@@ -2,11 +2,14 @@ package com.novel2video.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novel2video.entity.NovelCharacter;
 import com.novel2video.entity.Storyboard;
 import com.novel2video.entity.VideoTask;
+import com.novel2video.mapper.CharacterMapper;
 import com.novel2video.mapper.StoryboardMapper;
 import com.novel2video.mapper.VideoTaskMapper;
 import com.novel2video.service.VideoService;
+import com.novel2video.util.AnimePromptUtil;
 import com.novel2video.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +41,9 @@ public class VideoServiceImpl implements VideoService {
     
     @Autowired
     private StoryboardMapper storyboardMapper;
+
+    @Autowired
+    private CharacterMapper characterMapper;
     
     @Value("${huoshan.api-key}")
     private String apiKey;
@@ -142,10 +148,8 @@ public class VideoServiceImpl implements VideoService {
         // 文本提示词
         Map<String, Object> textContent = new HashMap<>();
         textContent.put("type", "text");
-        String prompt = storyboard.getPrompt() != null && !storyboard.getPrompt().isEmpty()
-            ? storyboard.getPrompt()
-            : storyboard.getDescription();
-        textContent.put("text", prompt + " --duration 10 --camerafixed false --watermark true");
+        String prompt = buildVideoPrompt(storyboard);
+        textContent.put("text", prompt + " --duration 5 --camerafixed false --watermark true");
         content.add(textContent);
         
         // 首帧图
@@ -183,6 +187,34 @@ public class VideoServiceImpl implements VideoService {
             log.error("创建火山视频任务失败", e);
             throw new RuntimeException("创建视频任务失败：" + e.getMessage(), e);
         }
+    }
+
+    private String buildVideoPrompt(Storyboard storyboard) {
+        String sceneDescription = storyboard.getDescription() != null && !storyboard.getDescription().trim().isEmpty()
+            ? storyboard.getDescription().trim()
+            : storyboard.getPrompt();
+
+        return AnimePromptUtil.buildVideoPrompt(sceneDescription, loadStoryboardCharacters(storyboard));
+    }
+
+    private List<NovelCharacter> loadStoryboardCharacters(Storyboard storyboard) {
+        if (storyboard.getCharacterIds() == null || storyboard.getCharacterIds().trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<NovelCharacter> characters = new ArrayList<>();
+        String[] ids = storyboard.getCharacterIds().split(",");
+        for (String idText : ids) {
+            try {
+                Long characterId = Long.parseLong(idText.trim());
+                NovelCharacter character = characterMapper.selectById(characterId);
+                if (character != null) {
+                    characters.add(character);
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return characters;
     }
     
     /**
