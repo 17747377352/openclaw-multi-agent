@@ -1,118 +1,173 @@
 package com.novel2video.controller;
 
+import com.novel2video.common.Result;
+import com.novel2video.dto.view.VideoBatchResult;
+import com.novel2video.dto.view.VideoTaskView;
+import com.novel2video.entity.ChapterGroup;
+import com.novel2video.entity.Storyboard;
 import com.novel2video.entity.VideoTask;
+import com.novel2video.service.NovelService;
+import com.novel2video.service.StoryboardService;
 import com.novel2video.service.VideoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-/**
- * 视频任务管理 Controller
- * 
- * @author developer
- * @since 2026-03-10
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/video")
 public class VideoController {
-    
+
     @Autowired
     private VideoService videoService;
-    
-    /**
-     * 获取视频任务列表
-     */
+
+    @Autowired
+    private NovelService novelService;
+
+    @Autowired
+    private StoryboardService storyboardService;
+
     @GetMapping("/group/{groupId}")
-    public Map<String, Object> getVideoTasks(@PathVariable Long groupId) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<List<VideoTaskView>> getVideoTasks(@PathVariable Long groupId,
+                                                     @RequestParam(required = false) Long projectId) {
         try {
-            List<VideoTask> tasks = videoService.getVideoTasksByGroupId(groupId);
-            result.put("success", true);
-            result.put("data", tasks);
-            result.put("count", tasks.size());
+            List<VideoTask> tasks = new ArrayList<>();
+            if (projectId != null) {
+                List<ChapterGroup> groups = novelService.getGroupsByProjectId(projectId);
+                for (ChapterGroup group : groups) {
+                    tasks.addAll(videoService.getVideoTasksByGroupId(group.getId()));
+                }
+            } else {
+                tasks = videoService.getVideoTasksByGroupId(groupId);
+            }
+
+            tasks.sort(Comparator.comparing(VideoTask::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
+            List<VideoTaskView> views = tasks.stream().map(this::toVideoTaskView).collect(Collectors.toList());
+            return Result.success(views);
         } catch (Exception e) {
             log.error("查询失败", e);
-            result.put("success", false);
-            result.put("message", "查询失败：" + e.getMessage());
+            return Result.error("查询失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 创建视频任务
-     */
+
     @PostMapping("/create")
-    public Map<String, Object> createVideoTask(@RequestParam Long storyboardId) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<Long> createVideoTask(@RequestParam Long storyboardId) {
         try {
             Long taskId = videoService.createVideoTask(storyboardId);
-            result.put("success", true);
-            result.put("taskId", taskId);
-            result.put("message", "视频任务创建成功，正在生成中...");
+            return Result.success("视频任务创建成功，正在生成中...", taskId);
         } catch (Exception e) {
             log.error("创建失败", e);
-            result.put("success", false);
-            result.put("message", "创建失败：" + e.getMessage());
+            return Result.error("创建失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 获取任务详情
-     */
+
     @GetMapping("/{taskId}")
-    public Map<String, Object> getVideoTask(@PathVariable Long taskId) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<VideoTaskView> getVideoTask(@PathVariable Long taskId) {
         try {
             VideoTask task = videoService.getVideoTask(taskId);
-            result.put("success", true);
-            result.put("data", task);
+            if (task == null) {
+                return Result.error("任务不存在");
+            }
+            return Result.success(toVideoTaskView(task));
         } catch (Exception e) {
             log.error("查询失败", e);
-            result.put("success", false);
-            result.put("message", "查询失败：" + e.getMessage());
+            return Result.error("查询失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 重试视频任务
-     */
+
     @PostMapping("/{taskId}/retry")
-    public Map<String, Object> retryVideoTask(@PathVariable Long taskId) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<Void> retryVideoTask(@PathVariable Long taskId) {
         try {
             videoService.retryVideoTask(taskId);
-            result.put("success", true);
-            result.put("message", "重试成功，正在重新生成...");
+            return Result.success("重试成功，正在重新生成...", null);
         } catch (Exception e) {
             log.error("重试失败", e);
-            result.put("success", false);
-            result.put("message", "重试失败：" + e.getMessage());
+            return Result.error("重试失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 批量生成视频（按分组）
-     */
+
     @PostMapping("/batch/{groupId}")
-    public Map<String, Object> batchGenerate(@PathVariable Long groupId) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<VideoBatchResult> batchGenerate(@PathVariable Long groupId) {
         try {
-            // TODO: 实现批量生成逻辑
-            result.put("success", true);
-            result.put("message", "批量生成任务已提交");
+            List<Storyboard> storyboards = storyboardService.getStoryboardsByGroupId(groupId);
+            if (storyboards == null || storyboards.isEmpty()) {
+                return Result.error("当前分组没有可生成的视频分镜");
+            }
+
+            Set<Long> existingStoryboardIds = videoService.getVideoTasksByGroupId(groupId).stream()
+                    .map(VideoTask::getStoryboardId)
+                    .collect(Collectors.toCollection(HashSet::new));
+
+            int submitted = 0;
+            int skipped = 0;
+            for (Storyboard storyboard : storyboards) {
+                if (storyboard.getId() == null) {
+                    skipped++;
+                    continue;
+                }
+                if (existingStoryboardIds.contains(storyboard.getId())) {
+                    skipped++;
+                    continue;
+                }
+                if (storyboard.getFrameImageUrl() == null || storyboard.getFrameImageUrl().trim().isEmpty()) {
+                    skipped++;
+                    continue;
+                }
+
+                videoService.createVideoTask(storyboard.getId());
+                submitted++;
+            }
+
+            VideoBatchResult batchResult = new VideoBatchResult();
+            batchResult.setSubmitted(submitted);
+            batchResult.setSkipped(skipped);
+            return Result.success("批量生成任务已提交", batchResult);
         } catch (Exception e) {
             log.error("批量生成失败", e);
-            result.put("success", false);
-            result.put("message", "批量生成失败：" + e.getMessage());
+            return Result.error("批量生成失败：" + e.getMessage());
         }
-        return result;
+    }
+
+    private VideoTaskView toVideoTaskView(VideoTask task) {
+        String uiStatus = toUiStatus(task.getStatus());
+        int progress = task.getProgress() != null ? task.getProgress() : 0;
+        if ("completed".equals(uiStatus) && progress < 100) {
+            progress = 100;
+        }
+
+        VideoTaskView view = new VideoTaskView();
+        view.setId(task.getId());
+        view.setTaskId(task.getTaskId() != null ? task.getTaskId() : "TASK-" + task.getId());
+        view.setGroupId(task.getGroupId());
+        view.setStoryboardId(task.getStoryboardId());
+        view.setTitle("场景 " + (task.getStoryboardId() != null ? task.getStoryboardId() : ""));
+        view.setVideoUrl(task.getVideoUrl());
+        view.setDuration(task.getVideoDuration() != null ? task.getVideoDuration() + " 秒" : "预计 5 秒");
+        view.setVideoDuration(task.getVideoDuration());
+        view.setResolution("1080x1920");
+        view.setModel("doubao-seedance");
+        view.setProgress(progress);
+        view.setStatus(uiStatus);
+        view.setRawStatus(task.getStatus());
+        view.setFailReason(task.getFailReason());
+        view.setRetryCount(task.getRetryCount());
+        view.setCreatedAt(task.getCreatedAt());
+        view.setUpdatedAt(task.getUpdatedAt());
+        return view;
+    }
+
+    private String toUiStatus(Integer status) {
+        if (status == null) return "pending";
+        if (status == 2) return "completed";
+        if (status == 1) return "processing";
+        if (status >= 3) return "failed";
+        return "pending";
     }
 }

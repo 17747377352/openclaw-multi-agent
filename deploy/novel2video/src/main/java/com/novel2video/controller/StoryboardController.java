@@ -1,123 +1,112 @@
 package com.novel2video.controller;
 
+import com.novel2video.common.Result;
+import com.novel2video.dto.view.StoryboardView;
 import com.novel2video.entity.Storyboard;
 import com.novel2video.service.StoryboardService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
-/**
- * 分镜管理 Controller
- * 
- * @author developer
- * @since 2026-03-10
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/storyboard")
 public class StoryboardController {
-    
+
     @Autowired
     private StoryboardService storyboardService;
-    
-    /**
-     * 获取分镜列表
-     */
+
     @GetMapping("/group/{groupId}")
-    public Map<String, Object> getStoryboards(@PathVariable Long groupId) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<List<StoryboardView>> getStoryboards(@PathVariable Long groupId) {
         try {
-            List<Storyboard> storyboards = storyboardService.getStoryboardsByGroupId(groupId);
-            result.put("success", true);
-            result.put("data", storyboards);
-            result.put("count", storyboards.size());
+            List<StoryboardView> storyboards = storyboardService.getStoryboardsByGroupId(groupId).stream()
+                    .map(this::toStoryboardView)
+                    .collect(Collectors.toList());
+            return Result.success(storyboards);
         } catch (Exception e) {
             log.error("查询失败", e);
-            result.put("success", false);
-            result.put("message", "查询失败：" + e.getMessage());
+            return Result.error("查询失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 生成分镜（AI）
-     */
+
     @PostMapping("/generate")
-    public Map<String, Object> generateStoryboards(@RequestParam Long groupId,
-                                                    @RequestParam String content) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<List<StoryboardView>> generateStoryboards(@RequestParam Long groupId,
+                                                            @RequestParam(required = false) String content) {
         try {
-            List<Storyboard> storyboards = storyboardService.generateStoryboards(groupId, content);
-            result.put("success", true);
-            result.put("data", storyboards);
-            result.put("message", "分镜生成成功");
+            storyboardService.generateStoryboards(groupId, content);
+            List<StoryboardView> storyboards = storyboardService.getStoryboardsByGroupId(groupId).stream()
+                    .map(this::toStoryboardView)
+                    .collect(Collectors.toList());
+            return Result.success("分镜生成成功", storyboards);
         } catch (Exception e) {
             log.error("生成失败", e);
-            result.put("success", false);
-            result.put("message", "生成失败：" + e.getMessage());
+            return Result.error("生成失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 生成首帧图
-     */
+
     @PostMapping("/{storyboardId}/frame")
-    public Map<String, Object> generateFrame(@PathVariable Long storyboardId,
-                                              @RequestBody List<Long> characterIds) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<String> generateFrame(@PathVariable Long storyboardId,
+                                        @RequestBody List<Long> characterIds) {
         try {
-            String imageUrl = storyboardService.generateStoryboardFrame(storyboardId, characterIds);
-            result.put("success", true);
-            result.put("imageUrl", imageUrl);
-            result.put("message", "首帧图生成成功");
+            return Result.success("首帧图生成成功", storyboardService.generateStoryboardFrame(storyboardId, characterIds));
         } catch (Exception e) {
             log.error("生成失败", e);
-            result.put("success", false);
-            result.put("message", "生成失败：" + e.getMessage());
+            return Result.error("生成失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 更新分镜
-     */
+
     @PostMapping("/{storyboardId}")
-    public Map<String, Object> updateStoryboard(@PathVariable Long storyboardId,
-                                                  @RequestBody Storyboard storyboard) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<Void> updateStoryboard(@PathVariable Long storyboardId, @RequestBody Storyboard storyboard) {
         try {
             storyboard.setId(storyboardId);
             storyboardService.updateStoryboard(storyboard);
-            result.put("success", true);
-            result.put("message", "更新成功");
+            return Result.success("更新成功", null);
         } catch (Exception e) {
             log.error("更新失败", e);
-            result.put("success", false);
-            result.put("message", "更新失败：" + e.getMessage());
+            return Result.error("更新失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 批量确认分镜
-     */
+
     @PostMapping("/confirm")
-    public Map<String, Object> confirmStoryboards(@RequestBody List<Long> storyboardIds) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<Void> confirmStoryboards(@RequestBody List<Long> storyboardIds) {
         try {
             storyboardService.confirmStoryboards(storyboardIds);
-            result.put("success", true);
-            result.put("message", "确认成功");
+            return Result.success("确认成功", null);
         } catch (Exception e) {
             log.error("确认失败", e);
-            result.put("success", false);
-            result.put("message", "确认失败：" + e.getMessage());
+            return Result.error("确认失败：" + e.getMessage());
         }
-        return result;
+    }
+
+    private StoryboardView toStoryboardView(Storyboard storyboard) {
+        StoryboardView view = new StoryboardView();
+        view.setId(storyboard.getId());
+        view.setGroupId(storyboard.getGroupId());
+        view.setSceneNumber(storyboard.getSceneNumber());
+        view.setTitle("场景 " + (storyboard.getSceneNumber() != null ? storyboard.getSceneNumber() : ""));
+        view.setLocation("未设置");
+        view.setDescription(storyboard.getDescription());
+        view.setPrompt(storyboard.getPrompt());
+        view.setCharacterIds(storyboard.getCharacterIds());
+        view.setImageUrl(storyboard.getFrameImageUrl());
+        view.setFrameImageUrl(storyboard.getFrameImageUrl());
+        view.setFrameStatus(storyboard.getFrameStatus());
+        view.setIsConfirmed(storyboard.getIsConfirmed());
+        view.setStatus(toUiStatus(storyboard));
+        view.setCreatedAt(storyboard.getCreatedAt());
+        view.setUpdatedAt(storyboard.getUpdatedAt());
+        return view;
+    }
+
+    private String toUiStatus(Storyboard storyboard) {
+        Integer frameStatus = storyboard.getFrameStatus();
+        Integer isConfirmed = storyboard.getIsConfirmed();
+        if (frameStatus != null && frameStatus == 1) return "generating";
+        if (frameStatus != null && frameStatus == 3) return "rejected";
+        if ((frameStatus != null && frameStatus == 2) || (isConfirmed != null && isConfirmed == 1)) return "approved";
+        return "pending";
     }
 }

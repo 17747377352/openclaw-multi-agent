@@ -15,6 +15,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -27,6 +29,9 @@ import java.util.concurrent.*;
 @Slf4j
 @Service
 public class VideoServiceImpl implements VideoService {
+
+    private static final String REQUEST_MODEL_HEADER = "X-Request-Model";
+    private static final String CONTENT_TASKS_PATH = "/contents/generations/tasks";
     
     @Autowired
     private VideoTaskMapper videoTaskMapper;
@@ -154,10 +159,14 @@ public class VideoServiceImpl implements VideoService {
         requestBody.put("content", content);
         
         try {
+            Map<String, String> customHeaders = new HashMap<>();
+            customHeaders.put(REQUEST_MODEL_HEADER, videoModel);
+
             Map<String, Object> response = HttpUtil.postWithRetry(
-                baseUrl + "/content/generation",
+                baseUrl + CONTENT_TASKS_PATH,
                 apiKey,
                 requestBody,
+                customHeaders,
                 Map.class,
                 3
             );
@@ -277,15 +286,12 @@ public class VideoServiceImpl implements VideoService {
      */
     private Map<String, Object> getTaskStatus(String volcanoTaskId) {
         log.debug("查询火山任务状态：volcanoTaskId={}", volcanoTaskId);
-        
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("task_id", volcanoTaskId);
-        
+
         try {
-            return HttpUtil.postWithRetry(
-                baseUrl + "/content/generation/status",
+            String encodedTaskId = URLEncoder.encode(volcanoTaskId, StandardCharsets.UTF_8);
+            return HttpUtil.getWithRetry(
+                baseUrl + CONTENT_TASKS_PATH + "/" + encodedTaskId,
                 apiKey,
-                requestBody,
                 Map.class,
                 3
             );
@@ -337,8 +343,18 @@ public class VideoServiceImpl implements VideoService {
             if (url != null && !url.isEmpty()) {
                 return url;
             }
+
+            url = rootNode.path("content").path("video_url").asText(null);
+            if (url != null && !url.isEmpty()) {
+                return url;
+            }
             
             url = rootNode.path("data").path("output").path("video_url").asText(null);
+            if (url != null && !url.isEmpty()) {
+                return url;
+            }
+
+            url = rootNode.path("content").path("file_url").asText(null);
             if (url != null && !url.isEmpty()) {
                 return url;
             }

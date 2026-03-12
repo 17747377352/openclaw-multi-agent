@@ -522,6 +522,15 @@
             margin: 0 auto;
             max-width: 320px;
         }
+
+        .video-player video {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #000;
+        }
         
         .retry-form {
             padding: 15px;
@@ -747,12 +756,12 @@
                 <div class="video-player" id="videoPlayer">🎬</div>
                 <div style="margin-top:15px; text-align:center;">
                     <div style="font-size:14px; font-weight:600; margin-bottom:5px;" id="videoPlayerTitle">场景标题</div>
-                    <div style="font-size:12px; color:#666;">时长：5.2 秒 | 分辨率：1080x1920 | 格式：MP4</div>
+                    <div style="font-size:12px; color:#666;" id="videoPlayerMeta">时长：- | 分辨率：- | 格式：MP4</div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeVideoPlayer()">关闭</button>
-                <button class="btn btn-primary">⬇️ 下载视频</button>
+                <button class="btn btn-primary" onclick="downloadCurrentVideo()">⬇️ 下载视频</button>
                 <button class="btn btn-success">📤 分享到...</button>
             </div>
         </div>
@@ -861,6 +870,7 @@
         let refreshInterval = null;
         let countdown = 10;
         let currentRetryTaskId = null;
+        let currentVideoTaskId = null;
         
         // 获取项目 ID
         function getProjectId() {
@@ -912,7 +922,7 @@
             
             try {
                 // 获取所有分组的任务
-                const response = await fetch(`${API_BASE}/video/group/1`);
+                const response = await fetch(`${API_BASE}/video/group/1?projectId=${projectId}`);
                 const result = await response.json();
                 
                 if (result.code === 200 && result.data) {
@@ -1092,18 +1102,62 @@
         // 显示视频播放器
         function showVideoPlayer(taskId) {
             const task = tasks.find(t => t.id === taskId);
+            if (!task || !task.videoUrl) {
+                showToast('视频链接不存在或已失效', 'error');
+                return;
+            }
+
+            currentVideoTaskId = taskId;
             document.getElementById('videoPlayerTitle').textContent = task?.title || '视频预览';
+            document.getElementById('videoPlayerMeta').textContent = `时长：${task.duration || '-'} | 分辨率：${task.resolution || '-'} | 格式：MP4`;
+
+            const playerContainer = document.getElementById('videoPlayer');
+            playerContainer.innerHTML = '';
+
+            const video = document.createElement('video');
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.src = task.videoUrl;
+            video.onerror = () => showToast('视频加载失败，链接可能已过期', 'error');
+
+            playerContainer.appendChild(video);
             document.getElementById('videoPlayerModal').classList.add('active');
+            video.play().catch(() => {});
         }
-        
+
         // 关闭视频播放器
         function closeVideoPlayer() {
+            const playerContainer = document.getElementById('videoPlayer');
+            const video = playerContainer.querySelector('video');
+            if (video) {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+            }
+            playerContainer.textContent = '🎬';
+            currentVideoTaskId = null;
             document.getElementById('videoPlayerModal').classList.remove('active');
         }
-        
+
+        function downloadCurrentVideo() {
+            if (currentVideoTaskId == null) {
+                showToast('当前没有可下载的视频', 'warning');
+                return;
+            }
+            downloadVideo(currentVideoTaskId);
+        }
+
         // 下载视频
         function downloadVideo(taskId) {
-            showToast('视频下载已开始', 'success');
+            const task = tasks.find(t => t.id === taskId);
+            if (!task || !task.videoUrl) {
+                showToast('视频链接不存在或已失效', 'error');
+                return;
+            }
+
+            window.open(task.videoUrl, '_blank', 'noopener');
+            showToast('已打开视频下载链接', 'success');
         }
         
         // 显示重试弹窗
@@ -1233,7 +1287,7 @@
         // 刷新任务
         async function refreshTasks() {
             try {
-                const response = await fetch(`${API_BASE}/video/group/1`);
+                const response = await fetch(`${API_BASE}/video/group/1?projectId=${projectId}`);
                 const result = await response.json();
                 
                 if (result.code === 200 && result.data) {

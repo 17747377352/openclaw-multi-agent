@@ -1,122 +1,107 @@
 package com.novel2video.controller;
 
+import com.novel2video.common.Result;
+import com.novel2video.dto.view.CharacterView;
 import com.novel2video.entity.NovelCharacter;
 import com.novel2video.service.CharacterService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
-/**
- * 人物管理 Controller
- * 
- * @author developer
- * @since 2026-03-10
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/character")
 public class NovelCharacterController {
-    
+
     @Autowired
     private CharacterService characterService;
-    
-    /**
-     * 获取人物列表
-     */
+
     @GetMapping("/project/{projectId}")
-    public Map<String, Object> getCharacters(@PathVariable Long projectId) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<List<CharacterView>> getCharacters(@PathVariable Long projectId) {
         try {
-            List<NovelCharacter> characters = characterService.getCharactersByProjectId(projectId);
-            result.put("success", true);
-            result.put("data", characters);
-            result.put("count", characters.size());
+            List<CharacterView> characters = characterService.getCharactersByProjectId(projectId).stream()
+                    .map(this::toCharacterView)
+                    .collect(Collectors.toList());
+            return Result.success(characters);
         } catch (Exception e) {
             log.error("查询失败", e);
-            result.put("success", false);
-            result.put("message", "查询失败：" + e.getMessage());
+            return Result.error("查询失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 提取人物（AI）
-     */
+
     @PostMapping("/extract")
-    public Map<String, Object> extractCharacters(@RequestParam Long projectId,
-                                                  @RequestParam String content) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<List<CharacterView>> extractCharacters(@RequestParam Long projectId,
+                                                         @RequestParam(required = false) String content) {
         try {
-            List<NovelCharacter> characters = characterService.extractCharacters(projectId, content);
-            result.put("success", true);
-            result.put("data", characters);
-            result.put("message", "人物提取成功");
+            List<CharacterView> characters = characterService.extractCharacters(projectId, content).stream()
+                    .map(this::toCharacterView)
+                    .collect(Collectors.toList());
+            return Result.success("人物提取成功", characters);
         } catch (Exception e) {
             log.error("提取失败", e);
-            result.put("success", false);
-            result.put("message", "提取失败：" + e.getMessage());
+            return Result.error("提取失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 生成人物图
-     */
+
     @PostMapping("/{characterId}/image")
-    public Map<String, Object> generateImage(@PathVariable Long characterId) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<String> generateImage(@PathVariable Long characterId) {
         try {
-            String imageUrl = characterService.generateCharacterImage(characterId);
-            result.put("success", true);
-            result.put("imageUrl", imageUrl);
-            result.put("message", "人物图生成成功");
+            return Result.success("人物图生成成功", characterService.generateCharacterImage(characterId));
         } catch (Exception e) {
             log.error("生成失败", e);
-            result.put("success", false);
-            result.put("message", "生成失败：" + e.getMessage());
+            return Result.error("生成失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 更新人物信息
-     */
+
     @PostMapping("/{characterId}")
-    public Map<String, Object> updateCharacter(@PathVariable Long characterId,
-                                                @RequestBody NovelCharacter character) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<Void> updateCharacter(@PathVariable Long characterId, @RequestBody NovelCharacter character) {
         try {
             character.setId(characterId);
             characterService.updateCharacter(character);
-            result.put("success", true);
-            result.put("message", "更新成功");
+            return Result.success("更新成功", null);
         } catch (Exception e) {
             log.error("更新失败", e);
-            result.put("success", false);
-            result.put("message", "更新失败：" + e.getMessage());
+            return Result.error("更新失败：" + e.getMessage());
         }
-        return result;
     }
-    
-    /**
-     * 批量确认人物
-     */
+
     @PostMapping("/confirm")
-    public Map<String, Object> confirmCharacters(@RequestBody List<Long> characterIds) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<Void> confirmCharacters(@RequestBody List<Long> characterIds) {
         try {
             characterService.confirmCharacters(characterIds);
-            result.put("success", true);
-            result.put("message", "确认成功");
+            return Result.success("确认成功", null);
         } catch (Exception e) {
             log.error("确认失败", e);
-            result.put("success", false);
-            result.put("message", "确认失败：" + e.getMessage());
+            return Result.error("确认失败：" + e.getMessage());
         }
-        return result;
+    }
+
+    private CharacterView toCharacterView(NovelCharacter character) {
+        CharacterView view = new CharacterView();
+        view.setId(character.getId());
+        view.setProjectId(character.getProjectId());
+        view.setName(character.getName());
+        view.setRole(character.getRole());
+        view.setDescription(character.getDescription());
+        view.setImageUrl(character.getSeedImageUrl());
+        view.setSeedImageUrl(character.getSeedImageUrl());
+        view.setSeedStatus(character.getSeedStatus());
+        view.setIsConfirmed(character.getIsConfirmed());
+        view.setStatus(toUiStatus(character));
+        view.setCreatedAt(character.getCreatedAt());
+        view.setUpdatedAt(character.getUpdatedAt());
+        return view;
+    }
+
+    private String toUiStatus(NovelCharacter character) {
+        Integer seedStatus = character.getSeedStatus();
+        Integer isConfirmed = character.getIsConfirmed();
+        if (seedStatus != null && seedStatus == 1) return "generating";
+        if (seedStatus != null && seedStatus == 3) return "rejected";
+        if ((seedStatus != null && seedStatus == 2) || (isConfirmed != null && isConfirmed == 1)) return "approved";
+        return "pending";
     }
 }
