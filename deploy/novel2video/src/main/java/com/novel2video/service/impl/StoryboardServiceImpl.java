@@ -2,8 +2,12 @@ package com.novel2video.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novel2video.entity.Chapter;
+import com.novel2video.entity.ChapterGroup;
 import com.novel2video.entity.NovelCharacter;
 import com.novel2video.entity.Storyboard;
+import com.novel2video.mapper.ChapterGroupMapper;
+import com.novel2video.mapper.ChapterMapper;
 import com.novel2video.mapper.CharacterMapper;
 import com.novel2video.mapper.StoryboardMapper;
 import com.novel2video.service.StoryboardService;
@@ -31,12 +35,21 @@ public class StoryboardServiceImpl implements StoryboardService {
     
     @Autowired
     private CharacterMapper characterMapper;
+
+    @Autowired
+    private ChapterMapper chapterMapper;
+
+    @Autowired
+    private ChapterGroupMapper chapterGroupMapper;
     
     @Value("${ai.kimi.api-key}")
     private String kimiApiKey;
     
     @Value("${ai.kimi.base-url:https://api.moonshot.cn/v1}")
     private String kimiBaseUrl;
+
+    @Value("${ai.kimi.model:kimi-latest}")
+    private String kimiModel;
     
     @Value("${huoshan.api-key}")
     private String huoshanApiKey;
@@ -46,6 +59,9 @@ public class StoryboardServiceImpl implements StoryboardService {
     
     @Value("${huoshan.image-model:doubao-seedream-4-5-251128}")
     private String imageModel;
+
+    @Value("${huoshan.default-size:1920x1920}")
+    private String imageSize;
     
     private final ObjectMapper objectMapper = new ObjectMapper();
     
@@ -72,9 +88,9 @@ public class StoryboardServiceImpl implements StoryboardService {
     public List<Storyboard> generateStoryboards(Long groupId, String chapterContent) {
         log.info("生成分镜：groupId={}, contentLength={}", groupId, 
             chapterContent != null ? chapterContent.length() : 0);
-        
-        if (chapterContent == null || chapterContent.isEmpty()) {
-            throw new RuntimeException("章节内容为空");
+
+        if (chapterContent == null || chapterContent.trim().isEmpty() || "...".equals(chapterContent.trim())) {
+            chapterContent = loadGroupContent(groupId);
         }
         
         // 截取前 8000 字用于分析
@@ -126,7 +142,7 @@ public class StoryboardServiceImpl implements StoryboardService {
         String prompt = String.format(STORYBOARD_GENERATE_PROMPT, content);
         
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "kimi-code-preview"); // 使用 Kimi Code 模型
+        requestBody.put("model", kimiModel);
         requestBody.put("messages", Arrays.asList(
             Map.of("role", "system", "content", "你是一个专业的分镜脚本师，擅长将小说内容转化为可视化的分镜脚本。返回纯 JSON 数组格式。"),
             Map.of("role", "user", "content", prompt)
@@ -163,6 +179,33 @@ public class StoryboardServiceImpl implements StoryboardService {
             log.error("Kimi API 调用失败", e);
             throw new RuntimeException("Kimi API 调用失败：" + e.getMessage(), e);
         }
+    }
+
+    private String loadGroupContent(Long groupId) {
+        List<Chapter> chapters = chapterMapper.selectByGroupId(groupId);
+        if (chapters == null || chapters.isEmpty()) {
+            throw new RuntimeException("分组章节为空，请先完成小说分组");
+        }
+
+        StringBuilder contentBuilder = new StringBuilder();
+        for (Chapter chapter : chapters) {
+            if (chapter.getTitle() != null && !chapter.getTitle().trim().isEmpty()) {
+                contentBuilder.append(chapter.getTitle()).append('\n');
+            }
+            if (chapter.getContent() != null && !chapter.getContent().trim().isEmpty()) {
+                contentBuilder.append(chapter.getContent()).append('\n');
+            }
+            // 预留足够上下文，再由上层裁剪到 8000
+            if (contentBuilder.length() >= 16000) {
+                break;
+            }
+        }
+
+        String merged = contentBuilder.toString().trim();
+        if (merged.isEmpty()) {
+            throw new RuntimeException("分组章节内容为空");
+        }
+        return merged;
     }
     
     /**
@@ -262,9 +305,12 @@ public class StoryboardServiceImpl implements StoryboardService {
      * 获取分组涉及的人物（从项目关联的人物中获取）
      */
     private List<NovelCharacter> getGroupCharacters(Long groupId) {
-        // 这里需要通过 groupId 找到 projectId，然后获取该项目的所有人物
-        // 简化处理：返回空列表，具体人物关联在生成首帧图时处理
-        return new ArrayList<>();
+        ChapterGroup group = chapterGroupMapper.selectById(groupId);
+        if (group == null || group.getProjectId() == null) {
+            return new ArrayList<>();
+        }
+        List<NovelCharacter> characters = characterMapper.selectByProjectId(group.getProjectId());
+        return characters == null ? new ArrayList<>() : characters;
     }
     
     @Override
@@ -358,7 +404,7 @@ public class StoryboardServiceImpl implements StoryboardService {
         requestBody.put("model", imageModel);
         requestBody.put("prompt", prompt);
         requestBody.put("n", 1);
-        requestBody.put("size", "1024x1024");
+        requestBody.put("size", imageSize);
         
         try {
             Map<String, Object> response = HttpUtil.postWithRetry(

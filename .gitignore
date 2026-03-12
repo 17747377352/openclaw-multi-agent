@@ -1,0 +1,24 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE / editor
+.idea/
+.vscode/
+*.iml
+
+# Logs
+logs/
+*.log
+
+# OS trash
+.Trash/
+
+# Java build artifacts (for multi-module repos)
+**/target/
+**/*.class
+
+# Application configuration
+application.yml
+application-dev.yml
+application-prod.yml

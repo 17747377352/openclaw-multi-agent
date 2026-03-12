@@ -24,7 +24,7 @@
     </sql>
 
     <insert id="insert" parameterType="com.novel2video.entity.NovelCharacter" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO character (
+        INSERT INTO `character` (
             project_id, name, description, user_edited_description, gender, role,
             seed_image_url, seed_prompt, seed_status, is_confirmed, created_at, updated_at
         ) VALUES (
@@ -35,19 +35,19 @@
 
     <select id="selectByProjectId" parameterType="java.lang.Long" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
-        FROM character
+        FROM `character`
         WHERE project_id = #{projectId}
         ORDER BY created_at ASC
     </select>
 
     <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
-        FROM character
+        FROM `character`
         WHERE id = #{id}
     </select>
 
     <update id="update" parameterType="com.novel2video.entity.NovelCharacter">
-        UPDATE character
+        UPDATE `character`
         <set>
             <if test="name != null">name = #{name},</if>
             <if test="description != null">description = #{description},</if>
@@ -64,7 +64,7 @@
     </update>
 
     <update id="batchUpdateConfirmStatus">
-        UPDATE character
+        UPDATE `character`
         SET is_confirmed = #{isConfirmed}, updated_at = NOW()
         WHERE id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">

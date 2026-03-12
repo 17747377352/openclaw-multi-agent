@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -91,6 +92,20 @@ public class GlobalExceptionHandler {
     public Result<Void> handleIllegalArgumentException(IllegalArgumentException e) {
         log.warn("非法参数：{}", e.getMessage());
         return Result.error(ErrorCode.PARAM_ERROR, e.getMessage());
+    }
+
+    /**
+     * 处理参数类型转换异常（如 path variable 传了 "null"）
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        String paramName = e.getName() != null ? e.getName() : "unknown";
+        Object value = e.getValue();
+        String valueText = value == null ? "null" : String.valueOf(value);
+        String message = String.format("参数 %s 类型错误，收到值: %s", paramName, valueText);
+        log.warn("参数类型异常：{}", message);
+        return Result.error(ErrorCode.PARAM_ERROR, message);
     }
     
     /**

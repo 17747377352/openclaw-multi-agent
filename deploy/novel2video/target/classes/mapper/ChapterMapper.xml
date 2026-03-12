@@ -53,4 +53,8 @@
         WHERE id = #{chapterId}
     </update>
 
+    <delete id="deleteByProjectId" parameterType="java.lang.Long">
+        DELETE FROM chapter WHERE project_id = #{projectId}
+    </delete>
+
 </mapper>

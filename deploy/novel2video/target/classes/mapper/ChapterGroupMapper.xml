@@ -54,4 +54,8 @@
         WHERE id = #{id}
     </update>
 
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM chapter_group WHERE id = #{id}
+    </delete>
+
 </mapper>

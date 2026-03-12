@@ -45,7 +45,7 @@ public class NovelServiceImpl implements NovelService {
     
     // 章节标题匹配模式（支持中文数字和阿拉伯数字）
     private static final Pattern CHAPTER_PATTERN = Pattern.compile(
-        "^(第 [零一二三四五六七八九十百千\\d]+章|Chapter\\s*[\\d]+|CHAPTER\\s*[\\d]+)", 
+        "^(第\\s*[零一二三四五六七八九十百千万两\\d]+\\s*[章节回卷集部篇]|Chapter\\s*[\\d]+|CHAPTER\\s*[\\d]+)",
         Pattern.CASE_INSENSITIVE
     );
     
@@ -87,6 +87,7 @@ public class NovelServiceImpl implements NovelService {
             project.setTotalChapters(chapters.size());
             long totalWords = chapters.stream().mapToLong(Chapter::getWordCount).sum();
             project.setTotalWords(totalWords);
+            project.setStatus(2); // 人物审核中
             projectMapper.update(project);
             
             // 自动分组（默认 5 章/组）
@@ -480,6 +481,7 @@ public class NovelServiceImpl implements NovelService {
             project.setTotalChapters(chapters.size());
             long totalWords = chapters.stream().mapToLong(Chapter::getWordCount).sum();
             project.setTotalWords(totalWords);
+            project.setStatus(2); // 人物审核中
             projectMapper.update(project);
             
             // 自动分组

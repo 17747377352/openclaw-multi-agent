@@ -2,7 +2,9 @@ package com.novel2video.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novel2video.entity.Chapter;
 import com.novel2video.entity.NovelCharacter;
+import com.novel2video.mapper.ChapterMapper;
 import com.novel2video.mapper.CharacterMapper;
 import com.novel2video.service.CharacterService;
 import com.novel2video.service.OssService;
@@ -32,6 +34,9 @@ public class CharacterServiceImpl implements CharacterService {
     
     @Autowired
     private OssService ossService;
+
+    @Autowired
+    private ChapterMapper chapterMapper;
     
     @Value("${ai.kimi.api-key}")
     private String kimiApiKey;
@@ -50,6 +55,9 @@ public class CharacterServiceImpl implements CharacterService {
     
     @Value("${huoshan.image-model:doubao-seedream-4-5-251128}")
     private String imageModel;
+
+    @Value("${huoshan.default-size:1920x1920}")
+    private String imageSize;
     
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -79,9 +87,9 @@ public class CharacterServiceImpl implements CharacterService {
     public List<NovelCharacter> extractCharacters(Long projectId, String novelContent) {
         log.info("提取人物：projectId={}, contentLength={}", projectId, 
             novelContent != null ? novelContent.length() : 0);
-        
-        if (novelContent == null || novelContent.isEmpty()) {
-            throw new RuntimeException("小说内容为空");
+
+        if (novelContent == null || novelContent.trim().isEmpty() || "...".equals(novelContent.trim())) {
+            novelContent = loadProjectContent(projectId);
         }
         
         // 截取前 10000 字用于分析（避免 token 超限）
@@ -123,7 +131,7 @@ public class CharacterServiceImpl implements CharacterService {
         String prompt = String.format(CHARACTER_EXTRACT_PROMPT, content);
         
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "kimi-code-preview"); // 使用 Kimi Code 模型
+        requestBody.put("model", kimiModel);
         requestBody.put("messages", Arrays.asList(
             Map.of("role", "system", "content", "你是一个专业的小说人物分析助手，擅长从文本中提取人物信息并以 JSON 格式返回。"),
             Map.of("role", "user", "content", prompt)
@@ -160,6 +168,33 @@ public class CharacterServiceImpl implements CharacterService {
             log.error("Kimi API 调用失败", e);
             throw new RuntimeException("Kimi API 调用失败：" + e.getMessage(), e);
         }
+    }
+
+    private String loadProjectContent(Long projectId) {
+        List<Chapter> chapters = chapterMapper.selectByProjectId(projectId);
+        if (chapters == null || chapters.isEmpty()) {
+            throw new RuntimeException("小说内容为空，请先上传并解析章节");
+        }
+
+        StringBuilder contentBuilder = new StringBuilder();
+        for (Chapter chapter : chapters) {
+            if (chapter.getTitle() != null && !chapter.getTitle().trim().isEmpty()) {
+                contentBuilder.append(chapter.getTitle()).append('\n');
+            }
+            if (chapter.getContent() != null && !chapter.getContent().trim().isEmpty()) {
+                contentBuilder.append(chapter.getContent()).append('\n');
+            }
+            // 预留足够上下文，再由上层裁剪到 10000
+            if (contentBuilder.length() >= 20000) {
+                break;
+            }
+        }
+
+        String merged = contentBuilder.toString().trim();
+        if (merged.isEmpty()) {
+            throw new RuntimeException("章节内容为空，无法提取人物");
+        }
+        return merged;
     }
     
     /**
@@ -308,7 +343,7 @@ public class CharacterServiceImpl implements CharacterService {
         requestBody.put("model", imageModel);
         requestBody.put("prompt", prompt);
         requestBody.put("n", 1);
-        requestBody.put("size", "1024x1024");
+        requestBody.put("size", imageSize);
         
         try {
             Map<String, Object> response = HttpUtil.postWithRetry(
